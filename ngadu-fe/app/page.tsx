@@ -1,8 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import AppSidebar from "./components/AppSidebar";
+import { createDemoMatch, DEMO_PLAYERS, type MatchFormat } from "./lib/demoMatches";
 
-type Match = { id: number; sport: string; format: string; opponent: string; opponentRating: number; rating: number; date: string; status: "upcoming" | "completed"; score?: [number, number]; change?: number };
+type Match = { id: number; sport: string; format: string; opponent: string; ally?: string; opponentRating: number; rating: number; date: string; status: "upcoming" | "completed"; score?: [number, number]; change?: number };
 
 const playerAccounts = [{ id: "p1", name: "Rizky Pratama", elo: 1320 }, { id: "p2", name: "Kevin Hartono", elo: 1284 }, { id: "p3", name: "Dimas Putra", elo: 1212 }, { id: "p4", name: "Nadia Putri", elo: 1368 }, { id: "p5", name: "Sarah Wijaya", elo: 1196 }];
 
@@ -26,44 +30,34 @@ function MatchesHistory({ matches }: { matches: Match[] }) {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [tab, setTab] = useState<"Overview" | "Leaderboard" | "Matches">("Overview");
-  const [matches, setMatches] = useState(initialMatches);
-  const [format, setFormat] = useState("Singles");
+  const [matches] = useState(initialMatches);
+  const [format, setFormat] = useState<MatchFormat>("Singles");
+  const [allyId, setAllyId] = useState("");
   const [opponent1, setOpponent1] = useState("");
   const [opponent2, setOpponent2] = useState("");
-  const [scores, setScores] = useState<[string, string]>(["", ""]);
   const [notice, setNotice] = useState("");
   const rating = useMemo(() => 1248 + matches.reduce((n, m) => n + (m.change ?? 0), 0), [matches]);
-  const openMatch = matches.find((m) => m.status === "upcoming");
   const selectedOpponent1 = playerAccounts.find((player) => player.id === opponent1);
   const selectedOpponent2 = playerAccounts.find((player) => player.id === opponent2);
+  const selectedAlly = playerAccounts.find((player) => player.id === allyId);
 
-  function submitScore(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const a = Number(scores[0]); const b = Number(scores[1]);
-    if (!openMatch || !Number.isFinite(a) || !Number.isFinite(b) || a === b || a < 0 || b < 0) {
-      setNotice("Masukkan skor valid. Hasil seri belum didukung."); return;
-    }
-    const won = a > b;
-    setMatches((list) => list.map((m) => m.id === openMatch.id ? { ...m, status: "completed", score: [a, b], change: won ? 18 : -14 } : m));
-    setScores(["", ""]); setNotice(won ? "Menang! Rating kamu naik +18." : "Pertandingan tercatat. Rating kamu turun 14.");
-  }
+
 
   function createMatch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedOpponent1 || (format === "Doubles" && !selectedOpponent2)) return;
+    if (!selectedOpponent1 || (format === "Doubles" && (!selectedOpponent2 || !selectedAlly))) return;
     if (format === "Doubles" && selectedOpponent1.id === selectedOpponent2?.id) { setNotice("Pilih dua akun pemain yang berbeda."); return; }
-    const opponent = format === "Doubles" ? `${selectedOpponent1.name} & ${selectedOpponent2!.name}` : selectedOpponent1.name;
-    const opponentRating = format === "Doubles" ? Math.round((selectedOpponent1.elo + selectedOpponent2!.elo) / 2) : selectedOpponent1.elo;
-    setMatches((list) => [{ id: Date.now(), sport: "Badminton", format, opponent, opponentRating, rating, date: "Baru saja · Menunggu skor", status: "upcoming" }, ...list]);
-    setOpponent1(""); setOpponent2(""); setNotice("Match baru ditambahkan."); setTab("Matches");
+    const resolvePlayer = (name: string) => DEMO_PLAYERS.find((player) => player.name === name)!;
+    const opponents = format === "Doubles" ? [resolvePlayer(selectedOpponent1.name), resolvePlayer(selectedOpponent2!.name)] : [resolvePlayer(selectedOpponent1.name)];
+    const match = createDemoMatch({ format, sport: "Badminton", players: { you: DEMO_PLAYERS[0], ...(format === "Doubles" && selectedAlly ? { ally: resolvePlayer(selectedAlly.name) } : {}), opponents } });
+    setTab("Matches");
+    router.push(`/matches/${match.id}`);
   }
 
   return <main className="app-shell">
-    <aside className="sidebar"><a className="brand" href="#"><span className="brand-mark">n</span> ngadu<span className="brand-dot">.</span></a><p className="side-label">MENU</p>
-      {(["Overview", "Leaderboard", "Matches"] as const).map((item, i) => <button key={item} className={`nav-item ${tab === item ? "active" : ""}`} onClick={() => setTab(item)}><span className="nav-icon">{["◫", "♜", "⌁"][i]}</span>{item}{item === "Matches" && <span className="nav-count">{matches.length}</span>}</button>)}
-      <div className="sidebar-bottom"><div className="avatar">A</div><div><strong>Alex Morgan</strong><small>Player account</small></div><span className="more">•••</span></div>
-    </aside>
+    <AppSidebar />
     <section className="main-area"><header className="topbar"><div className="crumb">Workspace <span>/</span> {tab}</div><div className="top-actions"><button className="icon-button" aria-label="Notifications">♧</button><div className="avatar small">A</div></div></header>
       <div className={`content ${tab === "Leaderboard" ? "leaderboard-view" : tab === "Matches" ? "matches-view" : ""}`}><div className="welcome"><div><p className="eyebrow">SUNDAY, OCTOBER 11</p><h1>{tab === "Overview" ? "Your game, your ranking." : tab}</h1><p className="subhead">Find your level. Play your game. Climb the ranks.</p></div><button className="primary-button" onClick={() => document.getElementById("new-match")?.scrollIntoView({ behavior: "smooth" })}><span>＋</span> Record a match</button></div>
         {notice && <div className="notice" role="status">{notice}<button onClick={() => setNotice("")} aria-label="Dismiss">×</button></div>}
@@ -72,10 +66,10 @@ export default function Home() {
         <div className="stat-grid"><article className="stat-card rating-card"><div className="stat-top"><span>YOUR ELO RATING</span><span className="live-dot">● LIVE</span></div><div className="rating-value">{rating.toLocaleString()}<span>pts</span></div><div className="stat-foot"><span className="up">↗ +18</span><span>from last match</span><span className="rating-badge">Intermediate</span></div><div className="sparkline"><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
           <article className="stat-card"><div className="stat-top">MATCHES PLAYED <span className="stat-icon">⌁</span></div><div className="stat-number">{matches.filter(m => m.status === "completed").length}<span className="muted"> matches</span></div><div className="stat-foot"><span className="neutral">This season</span></div><div className="mini-bars">{[24,38,31,54,43,66,50,72,59,84,68,95].map((h,i)=><i key={i} style={{height:`${h}%`}}/>)}</div></article>
           <article className="stat-card"><div className="stat-top">WIN RATE <span className="stat-icon">◎</span></div><div className="stat-number">67<span className="percent">%</span></div><div className="stat-foot"><span className="up">↗ +4.2%</span><span>vs last month</span></div><div className="progress"><i/></div></article></div>
-        <div className="section-heading"><div><h2>{tab === "Leaderboard" ? "Top players" : "Recent matches"}</h2><p>Your latest games and rating changes</p></div><button className="text-button" onClick={() => setTab("Matches")}>View all <span>→</span></button></div>
+        <div className="section-heading"><div><h2>{tab === "Leaderboard" ? "Top players" : "Recent matches"}</h2><p>Your latest games and rating changes</p></div><Link className="text-button" href="/matches">View all <span>→</span></Link></div>
         <div className="matches-table"><div className="table-head"><span>OPPONENT</span><span>GAME TYPE</span><span>RESULT</span><span>RATING CHANGE</span><span>DATE</span></div>{matches.map(m=><div className="match-row" key={m.id}><div className="player-cell"><div className="opponent-avatar">{m.opponent.slice(0,1)}</div><div><strong>{m.opponent}</strong><small>{m.status === "upcoming" ? `ELO ${m.opponentRating}` : `ELO ${m.opponentRating}`}</small></div></div><span className="format-pill">{m.sport} · {m.format}</span><span className={`result ${m.status === "upcoming" ? "pending" : "win"}`}>{m.status === "upcoming" ? "Awaiting score" : `Won ${m.score?.[0]}–${m.score?.[1]}`}</span><span className={m.change && m.change < 0 ? "down" : "up"}>{m.status === "upcoming" ? "—" : `${(m.change ?? 0) > 0 ? "+" : ""}${m.change} pts`}</span><span className="date-cell">{m.date}</span></div>)}</div>
-        <div className="lower-grid"><section className="panel" id="new-match"><div className="panel-title"><div><h2>Set up a match</h2><p>Choose how you want to play</p></div><span className="panel-icon">＋</span></div><div className="sport-label">SPORT</div><div className="sport-choice"><span className="sport-emoji">🏸</span><span><strong>Badminton</strong><small>Sport selected</small></span><span className="check">✓</span></div><form onSubmit={createMatch}><div className="sport-label">GAME FORMAT</div><div className="format-switch"><button type="button" className={format === "Singles" ? "selected" : ""} onClick={() => setFormat("Singles")}>Singles <small>1 vs 1</small></button><button type="button" className={format === "Doubles" ? "selected" : ""} onClick={() => setFormat("Doubles")}>Doubles <small>2 vs 2</small></button></div><div className="player-pickers">{[1, ...(format === "Doubles" ? [2] : [])].map((slot) => { const chosen = slot === 1 ? opponent1 : opponent2; const setChosen = slot === 1 ? setOpponent1 : setOpponent2; const chosenPlayer = playerAccounts.find((player) => player.id === chosen); return <label className="player-picker" key={slot}><span className="sport-label">OPPONENT PLAYER {slot}</span><select required value={chosen} onChange={(event) => setChosen(event.target.value)}><option value="" disabled>Select registered player…</option>{playerAccounts.filter((player) => slot === 1 || player.id !== opponent1).map((player) => <option key={player.id} value={player.id}>{player.name} · ELO {player.elo}</option>)}</select><small>{chosenPlayer ? `Current rating: ${chosenPlayer.elo} ELO` : "Choose an account to see their ELO"}</small></label>; })}</div><button className="secondary-button" type="submit">Create match <span>→</span></button></form></section>
-          <section className="panel score-panel"><div className="panel-title"><div><h2>Submit a result</h2><p>Enter the final score to update your rating</p></div><span className="panel-icon">↗</span></div>{openMatch ? <form onSubmit={submitScore}><div className="active-match"><span className="match-dot"/><span>ACTIVE MATCH</span><strong>{openMatch.format} · vs {openMatch.opponent}</strong></div><div className="score-entry"><label><span>YOU</span><input aria-label="Your score" inputMode="numeric" type="number" min="0" value={scores[0]} onChange={e=>setScores([e.target.value,scores[1]])} placeholder="0" required/></label><span className="score-dash">:</span><label><span>OPPONENT</span><input aria-label="Opponent score" inputMode="numeric" type="number" min="0" value={scores[1]} onChange={e=>setScores([scores[0],e.target.value])} placeholder="0" required/></label></div><p className="score-hint">Winner is determined by the higher score.</p><button className="primary-button full" type="submit">Submit score <span>→</span></button></form> : <div className="empty-state">No active match right now. Create a match first to record its score.</div>}</section></div>
+        <div className="lower-grid"><section className="panel" id="new-match"><div className="panel-title"><div><h2>Set up a match</h2><p>Choose how you want to play</p></div><span className="panel-icon">＋</span></div><div className="sport-label">SPORT</div><div className="sport-choice"><span className="sport-emoji">🏸</span><span><strong>Badminton</strong><small>Sport selected</small></span><span className="check">✓</span></div><form onSubmit={createMatch}><div className="sport-label">GAME FORMAT</div><div className="format-switch"><button type="button" className={format === "Singles" ? "selected" : ""} onClick={() => setFormat("Singles")}>Singles <small>1 vs 1</small></button><button type="button" className={format === "Doubles" ? "selected" : ""} onClick={() => setFormat("Doubles")}>Doubles <small>2 vs 2</small></button></div><div className="doubles-team">{format === "Doubles" && <div className="our-team"><div className="locked-player"><span>YOUR PLAYER 1</span><strong>Alex Morgan <small>Signed-in account</small></strong><b>1,248 ELO</b></div><label className="player-picker"><span className="sport-label">YOUR ALLY</span><select required value={allyId} onChange={(event) => setAllyId(event.target.value)}><option value="" disabled>Select your teammate…</option>{playerAccounts.filter((player) => player.id !== opponent1 && player.id !== opponent2).map((player) => <option key={player.id} value={player.id}>{player.name} · ELO {player.elo}</option>)}</select><small>{selectedAlly ? `Current rating: ${selectedAlly.elo} ELO` : "Choose your teammate's account"}</small></label></div>}<div className="player-pickers">{[1, ...(format === "Doubles" ? [2] : [])].map((slot) => { const chosen = slot === 1 ? opponent1 : opponent2; const setChosen = slot === 1 ? setOpponent1 : setOpponent2; const chosenPlayer = playerAccounts.find((player) => player.id === chosen); return <label className="player-picker" key={slot}><span className="sport-label">OPPONENT PLAYER {slot}</span><select required value={chosen} onChange={(event) => setChosen(event.target.value)}><option value="" disabled>Select registered player…</option>{playerAccounts.filter((player) => player.id !== allyId && (slot === 1 || player.id !== opponent1)).map((player) => <option key={player.id} value={player.id}>{player.name} · ELO {player.elo}</option>)}</select><small>{chosenPlayer ? `Current rating: ${chosenPlayer.elo} ELO` : "Choose an account to see their ELO"}</small></label>; })}</div></div><button className="secondary-button" type="submit">Create match <span>→</span></button></form></section>
+          <section className="panel score-panel"><div className="panel-title"><div><h2>Every match needs a score</h2><p>Submit the final result after you play</p></div><span className="panel-icon">↗</span></div><div className="empty-state">Create a match and Ngadu will take you to its score page straight away.</div><Link className="primary-button full" href="/matches/new">Create a match <span>→</span></Link></section></div>
         <footer>© 2026 Ngadu <span>Play your game. Own your rank.</span></footer>
       </div>
     </section>
