@@ -1,6 +1,6 @@
 # Frontend
 
-Next.js, React, and TypeScript frontend for Sporting BXB, using Bun. This directory contains the starter application; badminton features and Firebase integration have not been implemented.
+Next.js, React, and TypeScript frontend for Ngadu, using Bun. This directory contains the starter application; badminton features and Firebase integration have not been implemented.
 
 Prefer commands in the [root README](../README.md). From this directory:
 

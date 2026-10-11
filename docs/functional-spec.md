@@ -1,4 +1,4 @@
-# Badminton Community Matchmaking Functional Specification
+# Ngadu Functional Specification
 
 Status: Draft for review
 
@@ -6,7 +6,7 @@ Date: 2026-10-11
 
 ## 1. Purpose
 
-Build a web app that helps a community of friends organize badminton sessions and create match pairings. Members sign in with Google and use phone or desktop browsers. Success means an organizer can arrange a session, identify players, and publish pairings that members can view.
+Build Ngadu, a web app that helps a community of friends organize badminton sessions and create match pairings. Members sign in with Google and use phone or desktop browsers. Success means an organizer can arrange a session, identify players, and publish pairings that members can view.
 
 ## 2. Confirmed architecture
 
@@ -28,8 +28,8 @@ Firebase manages login identities. PostgreSQL stores application data linked to 
 
 | Directory | Purpose | Current state |
 | --- | --- | --- |
-| bxbeloy-fe | Frontend with its own package manifest and Bun lockfile | Generated Next.js starter |
-| bxbeloy-be | Future separate backend | Placeholder documentation; no implementation |
+| ngadu-fe | Frontend with its own package manifest and Bun lockfile | Generated Next.js starter |
+| ngadu-be | Future separate backend | Placeholder documentation; no implementation |
 | docs | Functional specification and PDF export | Markdown is the source of truth |
 
 Root scripts delegate to the frontend. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.

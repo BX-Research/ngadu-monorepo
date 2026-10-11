@@ -1,13 +1,13 @@
 {
-  "name": "sporting-bxb",
+  "name": "ngadu-monorepo",
   "private": true,
   "packageManager": "bun@1.4.3",
   "scripts": {
-    "setup:frontend": "bun install --cwd bxbeloy-fe --frozen-lockfile",
-    "dev": "bun run --cwd bxbeloy-fe --bun dev",
-    "build": "bun run --cwd bxbeloy-fe --bun build",
-    "start": "bun run --cwd bxbeloy-fe --bun start",
-    "lint": "bun run --cwd bxbeloy-fe --bun lint",
-    "typecheck": "bun run --cwd bxbeloy-fe --bun tsc --noEmit"
+    "setup:frontend": "bun install --cwd ngadu-fe --frozen-lockfile",
+    "dev": "bun run --cwd ngadu-fe --bun dev",
+    "build": "bun run --cwd ngadu-fe --bun build",
+    "start": "bun run --cwd ngadu-fe --bun start",
+    "lint": "bun run --cwd ngadu-fe --bun lint",
+    "typecheck": "bun run --cwd ngadu-fe --bun tsc --noEmit"
   }
 }

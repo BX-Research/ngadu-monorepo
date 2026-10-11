@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "bxbeloy-fe",
+      "name": "ngadu-fe",
       "dependencies": {
         "next": "16.4.0",
         "react": "19.3.0",

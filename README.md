@@ -1,21 +1,21 @@
-# Sporting BXB
+# Ngadu
 
 A badminton community matchmaking app. This monorepo currently contains the Next.js starter and functional specification. Authentication, backend endpoints, database/storage integration, and matchmaking have not been implemented.
 
 ## Structure
 
 ```text
-sporting-bxb/
+ngadu-monorepo/
   AGENTS.md
   package.json          # Root commands delegating to the frontend
-  bxbeloy-fe/           # Next.js + React + TypeScript, using Bun
-  bxbeloy-be/           # Backend placeholder; language undecided
+  ngadu-fe/           # Next.js + React + TypeScript, using Bun
+  ngadu-be/           # Backend placeholder; language undecided
   docs/
     functional-spec.md
     functional-spec.pdf
 ```
 
-Services share one Git repository and keep independent toolchains. The frontend manifest and lockfile remain in `bxbeloy-fe`. No extra monorepo build system is required initially.
+Services share one Git repository and keep independent toolchains. The frontend manifest and lockfile remain in `ngadu-fe`. No extra monorepo build system is required initially.
 
 ## Frontend development
 
