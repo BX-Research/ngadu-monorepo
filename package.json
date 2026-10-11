@@ -1,35 +1,13 @@
 {
-  "name": "bxbeloy-fe",
-  "version": "0.1.0",
+  "name": "sporting-bxb",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "next": "16.4.0",
-    "react": "19.3.0",
-    "react-dom": "19.3.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.4.0",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  },
   "packageManager": "bun@1.4.3",
-  "ignoreScripts": [
-    "sharp",
-    "unrs-resolver"
-  ],
-  "trustedDependencies": [
-    "sharp",
-    "unrs-resolver"
-  ]
+  "scripts": {
+    "setup:frontend": "bun install --cwd bxbeloy-fe --frozen-lockfile",
+    "dev": "bun run --cwd bxbeloy-fe --bun dev",
+    "build": "bun run --cwd bxbeloy-fe --bun build",
+    "start": "bun run --cwd bxbeloy-fe --bun start",
+    "lint": "bun run --cwd bxbeloy-fe --bun lint",
+    "typecheck": "bun run --cwd bxbeloy-fe --bun tsc --noEmit"
+  }
 }

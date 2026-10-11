@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sporting BXB
 
-## Getting Started
+A badminton community matchmaking app. This monorepo currently contains the Next.js starter and functional specification. Authentication, backend endpoints, database/storage integration, and matchmaking have not been implemented.
 
-First, run the development server:
+## Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```text
+sporting-bxb/
+  AGENTS.md
+  package.json          # Root commands delegating to the frontend
+  bxbeloy-fe/           # Next.js + React + TypeScript, using Bun
+  bxbeloy-be/           # Backend placeholder; language undecided
+  docs/
+    functional-spec.md
+    functional-spec.pdf
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Services share one Git repository and keep independent toolchains. The frontend manifest and lockfile remain in `bxbeloy-fe`. No extra monorepo build system is required initially.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Frontend development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Use Bun 1.4.3. From the repository root:
 
-## Learn More
+```bash
+bun run setup:frontend
+bun run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open <http://localhost:3000>. Check or build the frontend with:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+bun run lint
+bun run typecheck
+bun run build
+bun run start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Production start requires a successful build. Development, build, and start commands explicitly select Bun as the Next.js runtime.
 
-## Deploy on Vercel
+## Architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Frontend: Next.js, React, TypeScript, and Bun.
+- Authentication: Firebase Authentication with Google sign-in.
+- Backend: separate service; language and framework are undecided.
+- Application database: PostgreSQL.
+- Development file storage: SeaweedFS.
+- Local orchestration: Docker Compose, to be configured after service requirements are settled.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Firebase manages login identities; PostgreSQL will store application data linked to Firebase UIDs. Firestore is not required. Production hosting and storage are undecided.
+
+## Documentation
+
+Read [the functional specification](docs/functional-spec.md) or [its PDF export](docs/functional-spec.pdf). Confirmed choices are separated from proposed features and open decisions.
+
+Read [AGENTS.md](AGENTS.md) and nested instructions before making changes. Keep credentials, environment files, dependencies, build files, and local service data out of Git.
