@@ -37,6 +37,22 @@ bun run start
 
 Production start requires a successful build. Development, build, and start commands explicitly select Bun as the Next.js runtime.
 
+## Git hooks
+
+Enable the shared hooks once per clone after installing Bun:
+
+```bash
+bun run setup:hooks
+```
+
+The pre-commit hook runs lint and typecheck when staged changes affect frontend code, dependencies, or validation tooling. Documentation-only commits skip application checks. Checks run against the working tree, so review partially staged changes separately. Hook scripts use Git's shell and keep LF line endings, including on Windows with Git for Windows.
+
+For frontend changes, also run `bun run build` before committing or opening a PR. No backend checks are configured until its toolchain is selected.
+
+## Pull requests
+
+Agents use the shared [PR skill](.agents/skills/pr/SKILL.md), available as `$pr`. Titles use Conventional Commits style; descriptions include Summary and Validation, with Notes and Related issues when applicable.
+
 ## Architecture
 
 - Frontend: Next.js, React, TypeScript, and Bun.
