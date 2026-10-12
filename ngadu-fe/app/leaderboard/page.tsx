@@ -1,18 +1,16 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
 import AppSidebar from "../components/AppSidebar";
 import ProfilePortrait from "../components/ProfilePortrait";
 import SportsIllustration from "../components/SportsIllustration";
+import { demoMatchesSnapshot, getDemoStandings, parseDemoMatchesSnapshot, subscribeDemoMatches } from "../lib/demoMatches";
 
-const players = [
-  { name: "Nadia Putri", elo: 1588, wins: 28, avatar: 4 },
-  { name: "Rizky Pratama", elo: 1512, wins: 24, avatar: 1 },
-  { name: "Kevin Hartono", elo: 1476, wins: 21, avatar: 2 },
-  { name: "Sarah Wijaya", elo: 1394, wins: 19, avatar: 5 },
-  { name: "Dimas Putra", elo: 1328, wins: 17, avatar: 3 },
-  { name: "Alex Morgan", elo: 1248, wins: 14, avatar: 0 },
-];
 const medals = ["🥇", "🥈", "🥉"];
 
 export default function LeaderboardRoute() {
+  const snapshot = useSyncExternalStore(subscribeDemoMatches, demoMatchesSnapshot, () => null);
+  const players = getDemoStandings(parseDemoMatchesSnapshot(snapshot ?? "[]"));
   const podium = [players[1], players[0], players[2]];
   return <main className="app-shell"><AppSidebar/><section className="main-area"><header className="topbar"><div className="crumb">Workspace <span>/</span> Leaderboard</div><div className="top-actions"><span className="leader-season">🏸 Season 1</span></div></header><div className="content leaderboard-route">
     <section className="leader-hero"><div className="leader-hero-copy"><span className="hero-kicker">🏸 &nbsp; NGADU CLUB RANKS</span><h1>Who’s on a<br/>winning streak?</h1><p>Every rally gets you closer to the top. Keep playing, keep climbing!</p><span className="hero-season">🏆 &nbsp; Season 1 · Singles + Doubles</span></div><div className="hero-doodle"><SportsIllustration/><span className="doodle-spark spark-a">✦</span><span className="doodle-spark spark-b">✧</span></div><span className="hero-ball ball-one">🏸</span><span className="hero-ball ball-two">🎾</span></section>

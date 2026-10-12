@@ -1,4 +1,4 @@
-export type DemoPlayer = { id: string; name: string; elo: number; avatar: number };
+export type DemoPlayer = { id: string; name: string; elo: number; wins: number; avatar: number };
 export type MatchFormat = "Singles" | "Doubles";
 export type DemoMatch = {
   id: string;
@@ -14,13 +14,33 @@ export type DemoMatch = {
 };
 
 export const DEMO_PLAYERS: DemoPlayer[] = [
-  { id: "alex", name: "Alex Morgan", elo: 1248, avatar: 0 },
-  { id: "rizky", name: "Rizky Pratama", elo: 1320, avatar: 1 },
-  { id: "kevin", name: "Kevin Hartono", elo: 1284, avatar: 2 },
-  { id: "dimas", name: "Dimas Putra", elo: 1212, avatar: 3 },
-  { id: "nadia", name: "Nadia Putri", elo: 1368, avatar: 4 },
-  { id: "sarah", name: "Sarah Wijaya", elo: 1196, avatar: 5 },
+  { id: "alex", name: "Alex Morgan", elo: 1266, wins: 15, avatar: 0 },
+  { id: "rizky", name: "Rizky Pratama", elo: 1512, wins: 24, avatar: 1 },
+  { id: "kevin", name: "Kevin Hartono", elo: 1476, wins: 21, avatar: 2 },
+  { id: "dimas", name: "Dimas Putra", elo: 1328, wins: 17, avatar: 3 },
+  { id: "nadia", name: "Nadia Putri", elo: 1588, wins: 28, avatar: 4 },
+  { id: "sarah", name: "Sarah Wijaya", elo: 1394, wins: 19, avatar: 5 },
 ];
+
+export function getDemoStandings(matches: DemoMatch[]): DemoPlayer[] {
+  return DEMO_PLAYERS.map((player) => {
+    let elo = player.elo;
+    let wins = player.wins;
+    for (const match of matches) {
+      if (match.status !== "completed" || match.ratingChange === undefined) continue;
+      const onOwnTeam = match.players.you.id === player.id || match.players.ally?.id === player.id;
+      const onOpponentTeam = match.players.opponents.some((opponent) => opponent.id === player.id);
+      if (onOwnTeam) {
+        elo += match.ratingChange;
+        if (match.won) wins += 1;
+      } else if (onOpponentTeam) {
+        elo -= match.ratingChange;
+        if (!match.won) wins += 1;
+      }
+    }
+    return { ...player, elo, wins };
+  }).sort((a, b) => b.elo - a.elo);
+}
 
 const STORAGE_KEY = "ngadu.demo.matches.v1";
 const CHANGE_EVENT = "ngadu:demo-matches";
@@ -58,6 +78,14 @@ function writeDemoMatches(matches: DemoMatch[]) {
 }
 
 export function createDemoMatch(input: Omit<DemoMatch, "id" | "createdAt" | "status">): DemoMatch {
+  const roster = [input.players.you, ...(input.players.ally ? [input.players.ally] : []), ...input.players.opponents];
+  const uniquePlayerIds = new Set(roster.map((player) => player.id));
+  if (input.format === "Doubles" && (!input.players.ally || input.players.opponents.length !== 2 || uniquePlayerIds.size !== 4)) {
+    throw new Error("Doubles matches require four different players, including a teammate.");
+  }
+  if (input.format === "Singles" && (input.players.ally || input.players.opponents.length !== 1 || uniquePlayerIds.size !== 2)) {
+    throw new Error("Singles matches require exactly two different players.");
+  }
   const match: DemoMatch = {
     ...input,
     id: `demo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -76,8 +104,8 @@ export function submitDemoMatchResult(id: string, ownScore: number, opponentScor
   if (!Number.isInteger(ownScore) || !Number.isInteger(opponentScore) || ownScore < 0 || opponentScore < 0 || ownScore === opponentScore) return undefined;
   let updated: DemoMatch | undefined;
   const messages = ownScore > opponentScore
-    ? ["Ciyeee, menang! Rally kamu lagi panas!", "Mantap, kamu menang! Gas pertahankan streak-nya!", "Wih, lawan tumbang. Good game!"]
-    : ["Yah, cupu dikit—rematch, yuk!", "Belum rezeki menang. Latihan, lalu balas!", "Hari ini lawan unggul. Next match giliranmu!"];
+    ? ["Ciyeee, menang!", "Hoki Anjay", "ini mah emang Lawannya cupu"]
+    : ["Latihan lagi esss!", "LAU EMANG CUPU", "kok kalah bang"];
   const matches = readDemoMatches().map((match) => {
     if (match.id !== id || match.status !== "awaiting_result") return match;
     const won = ownScore > opponentScore;
