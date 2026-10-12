@@ -28,8 +28,8 @@ Firebase manages login identities. PostgreSQL stores application data linked to 
 
 | Directory | Purpose | Current state |
 | --- | --- | --- |
-| ngadu-fe | Frontend with its own package manifest and Bun lockfile | Generated Next.js starter |
-| ngadu-be | Future separate backend | Placeholder documentation; no implementation |
+| frontend | Frontend with its own package manifest and Bun lockfile | Generated Next.js starter |
+| backend | Future separate backend | Placeholder documentation; no implementation |
 | docs | Functional specification and PDF export | Markdown is the source of truth |
 
 Root scripts delegate to the frontend. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.

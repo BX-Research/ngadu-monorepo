@@ -6,8 +6,8 @@ This monorepo contains Ngadu, a badminton matchmaking app for a community of fri
 
 ## Layout
 
-- `ngadu-fe/`: Next.js, React, and TypeScript frontend using Bun. Read its nested `AGENTS.md` before frontend edits.
-- `ngadu-be/`: reserved for the backend. Language, framework, database library, and build tools are undecided. Do not scaffold a backend or add language-specific dependencies without a user decision. Rust is not a confirmed choice.
+- `frontend/`: Next.js, React, and TypeScript frontend using Bun. Read its nested `AGENTS.md` before frontend edits.
+- `backend/`: reserved for the backend. Language, framework, database library, and build tools are undecided. Do not scaffold a backend or add language-specific dependencies without a user decision. Rust is not a confirmed choice.
 - `docs/`: functional specification and PDF export. Markdown is the source of truth; keep PDF exports consistent.
 
 ## Confirmed architecture
@@ -29,7 +29,7 @@ bun run build
 bun run start
 ```
 
-Commands delegate to `ngadu-fe`; its dependencies and Bun lockfile remain there. Each service keeps its own toolchain. A JavaScript workspace or additional build orchestrator is not required. If needed, add `/home/reyza/.bun/bin` to PATH for the current WSL Bun installation.
+Commands delegate to `frontend`; its dependencies and Bun lockfile remain there. Each service keeps its own toolchain. A JavaScript workspace or additional build orchestrator is not required. If needed, add `/home/reyza/.bun/bin` to PATH for the current WSL Bun installation.
 
 Try normal sandboxed execution first. If creation fails with `Failed to create unified exec process: No such file or directory (os error 2)`, use a read-only probe through the approval system with `sandbox_permissions: "require_escalated"`, `/bin/bash`, and the explicit working directory when policy permits. Respect the result. The launcher error alone does not establish that WSL, Bash, or the repository is missing.
 
