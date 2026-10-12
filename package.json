@@ -3,11 +3,11 @@
   "private": true,
   "packageManager": "bun@1.4.3",
   "scripts": {
-    "setup:frontend": "bun install --cwd ngadu-fe --frozen-lockfile",
-    "dev": "bun run --cwd ngadu-fe --bun dev",
-    "build": "bun run --cwd ngadu-fe --bun build",
-    "start": "bun run --cwd ngadu-fe --bun start",
-    "lint": "bun run --cwd ngadu-fe --bun lint",
-    "typecheck": "bun run --cwd ngadu-fe --bun tsc --noEmit"
+    "setup:frontend": "bun install --cwd frontend --frozen-lockfile",
+    "dev": "bun run --cwd frontend --bun dev",
+    "build": "bun run --cwd frontend --bun build",
+    "start": "bun run --cwd frontend --bun start",
+    "lint": "bun run --cwd frontend --bun lint",
+    "typecheck": "bun run --cwd frontend --bun tsc --noEmit"
   }
 }
