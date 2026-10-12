@@ -8,14 +8,14 @@ A badminton community matchmaking app. This monorepo currently contains the Next
 ngadu-monorepo/
   AGENTS.md
   package.json          # Root commands delegating to the frontend
-  ngadu-fe/           # Next.js + React + TypeScript, using Bun
-  ngadu-be/           # Backend placeholder; language undecided
+  frontend/           # Next.js + React + TypeScript, using Bun
+  backend/           # Backend placeholder; language undecided
   docs/
     functional-spec.md
     functional-spec.pdf
 ```
 
-Services share one Git repository and keep independent toolchains. The frontend manifest and lockfile remain in `ngadu-fe`. No extra monorepo build system is required initially.
+Services share one Git repository and keep independent toolchains. The frontend manifest and lockfile remain in `frontend`. No extra monorepo build system is required initially.
 
 ## Frontend development
 
