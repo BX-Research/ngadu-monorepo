@@ -8,6 +8,7 @@
     "build": "bun run --cwd frontend --bun build",
     "start": "bun run --cwd frontend --bun start",
     "lint": "bun run --cwd frontend --bun lint",
-    "typecheck": "bun run --cwd frontend --bun tsc --noEmit"
+    "typecheck": "bun run --cwd frontend --bun tsc --noEmit",
+    "setup:hooks": "git config --local core.hooksPath .githooks"
   }
 }

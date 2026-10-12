@@ -1,0 +1,24 @@
+#!/bin/sh
+set -eu
+
+cd "$(git rev-parse --show-toplevel)"
+
+# Inspect both sides of renames and include deletions. Markdown alone needs no app checks.
+if git diff --cached --quiet --no-renames -- \
+  frontend/ package.json .githooks/ \
+  ':(glob,exclude)**/*.md'; then
+  exit 0
+else
+  diff_status=$?
+  if [ "$diff_status" -ne 1 ]; then
+    exit "$diff_status"
+  fi
+fi
+
+if ! command -v bun >/dev/null 2>&1; then
+  echo 'Pre-commit checks require Bun. Install the version in package.json and run bun run setup:frontend.' >&2
+  exit 1
+fi
+
+bun run lint
+bun run typecheck
