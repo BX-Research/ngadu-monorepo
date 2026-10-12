@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pull Requests"
+  short_description: "Use consistent Ngadu pull request conventions"
+  default_prompt: "Use $pr to prepare a pull request using this repository’s conventions."

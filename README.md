@@ -49,6 +49,10 @@ The pre-commit hook runs lint and typecheck when staged changes affect frontend 
 
 For frontend changes, also run `bun run build` before committing or opening a PR. No backend checks are configured until its toolchain is selected.
 
+## Pull requests
+
+Agents use the shared [PR skill](.agents/skills/pr/SKILL.md), available as `$pr`. Titles use Conventional Commits style; descriptions include Summary and Validation, with Notes and Related issues when applicable.
+
 ## Architecture
 
 - Frontend: Next.js, React, TypeScript, and Bun.

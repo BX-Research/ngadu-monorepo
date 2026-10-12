@@ -40,6 +40,10 @@ Commands delegate to `frontend`; its dependencies and Bun lockfile remain there.
 - The pre-commit hook selects checks from staged paths but runs lint and typecheck against the working tree. It does not build or test behavior. Partially staged changes require reviewing the staged result separately. Do not bypass failing hooks without the user's explicit instruction.
 - Backend tooling and tests remain undecided; add checks when its stack is selected.
 
+## Pull requests
+
+Use the repository [PR skill](.agents/skills/pr/SKILL.md) when drafting, creating, or updating a pull request. It defines the shared title, description, validation, and issue-link conventions.
+
 ## Working conventions
 
 - Preserve existing work and history. Git tracking belongs at the monorepo root; do not initialize nested repositories.
