@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"errors"
 	"fmt"
 	"io"
@@ -11,10 +10,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"ngadu/backend/internal/devdb"
 )
-
-//go:embed schema.sql
-var schemaSQL string
 
 type seedUser struct {
 	ID, FirebaseUID, DisplayName string
@@ -57,9 +54,6 @@ func seed(ctx context.Context, conn *pgx.Conn, output io.Writer) error {
 		return fmt.Errorf("begin seed: %w", err)
 	}
 	defer tx.Rollback(context.Background())
-	if _, err := tx.Exec(ctx, schemaSQL); err != nil {
-		return fmt.Errorf("initialize development schema: %w", err)
-	}
 	var messages bytes.Buffer
 	userIDs := make(map[string]string, len(seedUsers))
 	for _, user := range seedUsers {
@@ -116,11 +110,14 @@ func seed(ctx context.Context, conn *pgx.Conn, output io.Writer) error {
 func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	// An empty DATABASE_URL lets pgx use PGHOST, PGPORT, PGUSER, PGDATABASE, etc.
-	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
+	connectionURL, err := devdb.URL()
+	if err != nil {
+		return err
+	}
+	conn, err := pgx.Connect(ctx, connectionURL)
 	if err != nil {
 		// Avoid printing a connection URL that may include database credentials.
-		return errors.New("database connection failed; check DATABASE_URL or PostgreSQL environment variables")
+		return errors.New("local development database unavailable; run make db-migrate")
 	}
 	defer conn.Close(context.Background())
 	return seed(ctx, conn, os.Stdout)

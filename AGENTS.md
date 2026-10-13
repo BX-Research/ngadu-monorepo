@@ -7,7 +7,7 @@ This monorepo contains Ngadu, a badminton matchmaking app for a community of fri
 ## Layout
 
 - `frontend/`: Next.js, React, and TypeScript frontend using Bun. Read its nested `AGENTS.md` before frontend edits.
-- `backend/`: Go backend. The HTTP framework, API database library, migration tooling, and production build/deployment configuration remain undecided. Add dependencies only for agreed work; existing development utilities do not settle all API tooling choices.
+- `backend/`: Go backend. The HTTP framework, API database library, and production build/deployment configuration remain undecided. Add dependencies only for agreed work; existing development utilities do not settle all API tooling choices.
 - `docs/`: functional specification and PDF export. Markdown is the source of truth; keep PDF exports consistent.
 
 ## Confirmed architecture
@@ -16,7 +16,7 @@ Next.js runs on Bun. A separate Go backend will verify Firebase Authentication I
 
 ## Development commands
 
-The root Makefile provides shared shortcuts. `make install` downloads dependencies for both services and enables hooks; `make dev` starts Docker PostgreSQL and waits for readiness, then runs the Go server and frontend locally; `make seed` starts and seeds that same local Docker database. Root `.env` or shell variables configure the local stack; these two targets construct their own local database URL. `make check` runs supervisor tests, frontend lint/typecheck/build, then Go tests and vet. `make help` lists targets. Install GNU Make, Bun, Go, and Docker with Compose separately. Never run seed commands against production databases.
+The root Makefile provides shared shortcuts. `make install` downloads dependencies for both services and enables hooks; `make dev` starts Docker PostgreSQL and waits for readiness, then runs the Go server and frontend locally; `make seed` starts, migrates, and seeds that same local Docker database. Goose is a Go library invoked by `backend/scripts/migrate`; `make db-migrate`, `make db-status`, and `make db-revision msg=NAME` manage SQL migrations. All Make service/database targets are local development only. Root `.env` or shell variables configure the local stack; service, migration, and seed commands construct their own local database URL from `DEV_DB_*`, ignoring ambient `DATABASE_URL`. The Bun development supervisor lives under `backend/scripts/`. `make check` runs supervisor tests, frontend lint/typecheck/build, then Go tests and vet. `make help` lists targets. Install GNU Make, Bun, Go, and Docker with Compose separately. Never run seed commands against production databases.
 
 Existing Bun commands, from the repository root:
 

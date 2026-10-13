@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = fileURLToPath(new URL("../", import.meta.url));
+const root = fileURLToPath(new URL("../../", import.meta.url));
 
 export function developmentEnvironment(input = process.env) {
   const env = { ...input };
@@ -91,20 +91,16 @@ async function main(mode) {
       await run([docker, "compose", ...(mode === "db-stop" ? ["stop", "db"] : ["logs", "--follow", "db"])]);
       return;
     }
-    if (!["dev", "seed", "db-up"].includes(mode)) throw new Error("Use dev, seed, db-up, db-stop, or db-logs");
+    if (!["dev", "db-up"].includes(mode)) throw new Error("Use dev, db-up, db-stop, or db-logs");
     if (mode !== "db-up" && !Bun.which(go)) throw new Error("Go was not found. Install Go and add it to PATH.");
     const nextCLI = join(root, "frontend/node_modules/next/dist/bin/next");
-    if (mode === "dev") {
-      if (!existsSync(nextCLI)) throw new Error("Frontend dependencies are missing. Run make install first.");
+    if (mode !== "db-up") {
+      if (mode === "dev" && !existsSync(nextCLI)) throw new Error("Frontend dependencies are missing. Run make install first.");
       directory = mkdtempSync(join(tmpdir(), "ngadu-api-"));
       await run([go, "-C", "backend", "build", "-o", join(directory, process.platform === "win32" ? "api.exe" : "api"), "./cmd/api"]);
     }
     await run([docker, "compose", "up", "--detach", "--wait", "--wait-timeout", "60", "db"]);
     if (mode === "db-up") return;
-    if (mode === "seed") {
-      await run([go, "-C", "backend", "run", "./scripts/seed"], backendEnvironment(env));
-      return;
-    }
     const backend = start([join(directory, process.platform === "win32" ? "api.exe" : "api")], backendEnvironment(env));
     const readyURL = `http://127.0.0.1:${env.API_PORT}/readyz`;
     const deadline = Date.now() + 20000;

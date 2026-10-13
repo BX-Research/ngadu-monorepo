@@ -18,10 +18,11 @@ Build Ngadu, a web app that helps a community of friends organize badminton sess
 | Backend language | Go | Separate API service and authoritative application rules |
 | Authentication | Firebase Authentication | Google login and user identity |
 | Application database | PostgreSQL | Profiles, memberships, sessions, matches |
+| Schema migrations | Goose as a Go library | Versioned SQL migrations under backend/migrations |
 | Development file storage | SeaweedFS | Uploaded files when uploads are included |
 | Local infrastructure | Docker and Docker Compose | Local PostgreSQL; Next.js and Go run on the host for development |
 
-The backend will be a separate Go service. Its HTTP framework, API database library, migration tooling, and production build/deployment configuration remain undecided. Production hosting and storage remain undecided.
+The backend will be a separate Go service. Its HTTP framework, API database library, and production build/deployment configuration remain undecided. Production hosting and storage remain undecided.
 
 Firebase manages login identities. PostgreSQL stores application data linked to the verified Firebase UID. Firebase Authentication does not require Firestore. The Go backend must securely verify Firebase ID tokens.
 
@@ -35,7 +36,7 @@ Firebase manages login identities. PostgreSQL stores application data linked to 
 
 Root Bun scripts delegate to the frontend; the Makefile also provides Go and local database commands. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.
 
-The Go backend provides operational health/readiness endpoints. A development seeder defines a minimal bootstrap schema and fixture data; this does not settle production migrations. Docker Compose runs local PostgreSQL. Firebase integration and application API endpoints remain unimplemented; the frontend uses demo data. The following sections describe proposed application behavior.
+The Go backend provides operational health/readiness endpoints. Goose SQL migrations define the current minimal schema. A separate development seeder inserts fixture data. Migration and seed commands are Go programs under backend/scripts; no standalone Goose installation is required. Docker Compose runs local PostgreSQL. Firebase integration and application API endpoints remain unimplemented; the frontend uses demo data. The following sections describe proposed application behavior.
 
 ## 4. Proposed first release
 
@@ -196,7 +197,7 @@ The API distinguishes unauthenticated requests, denied access, invalid input, mi
 
 ## 13. Development and deployment
 
-`make dev` builds the Go backend, starts PostgreSQL through Docker Compose, waits for database health and backend readiness, and runs the backend and Next.js locally. Ctrl+C stops both app processes; PostgreSQL can be stopped separately with `make db-stop`. Its named volume persists across ordinary stops and restarts. `make seed` starts and seeds the same local development database. Root `.env` or shell variables configure local ports and development database credentials. Frontend/backend container images and SeaweedFS orchestration remain pending. Production storage and deployment remain undecided.
+`make dev` builds the Go backend, starts PostgreSQL through Docker Compose, waits for database health and backend readiness, and runs the backend and Next.js locally. Ctrl+C stops both app processes; PostgreSQL can be stopped separately with `make db-stop`. Its named volume persists across ordinary stops and restarts. `make seed` (also `make db-seed`) starts, migrates, and seeds the same local development database. `make db-migrate` applies migrations, `make db-status` shows migration status, and `make db-revision msg=NAME` creates a SQL template. All Make service/database commands target local development and ignore ambient DATABASE_URL. The Bun supervisor lives under backend/scripts. Root `.env` or shell variables configure local ports and development database credentials. Frontend/backend container images and SeaweedFS orchestration remain pending. Production storage and deployment remain undecided.
 
 Development login may use a real Firebase development project, the Firebase Auth emulator, or both. Emulator tests simulate identities and do not prove genuine Google sign-in works. Production credentials and data stay separate from development.
 
@@ -224,7 +225,7 @@ These scenarios validate the proposed baseline once its scope is accepted:
 
 | Decision | Open question |
 | --- | --- |
-| Backend tooling | HTTP framework, API database library, migration tools, production build/deployment configuration |
+| Backend tooling | HTTP framework, API database library, production build/deployment configuration |
 | Membership | Invite-only, organizer approval, or another policy |
 | Invitations | Shared/personal links, expiration and usage defaults |
 | Community scope | One or multiple communities |

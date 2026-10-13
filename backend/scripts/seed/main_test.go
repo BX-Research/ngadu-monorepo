@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,6 +33,14 @@ func testDB(t *testing.T) *pgx.Conn {
 		conn.Close(ctx)
 	})
 	if _, err := conn.Exec(ctx, "SET search_path TO "+schema); err != nil {
+		t.Fatal(err)
+	}
+	migration, err := os.ReadFile("../../migrations/20261013000000_initial_schema.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	up, _, _ := strings.Cut(string(migration), "-- +goose Down")
+	if _, err := conn.Exec(ctx, up); err != nil {
 		t.Fatal(err)
 	}
 	return conn
@@ -78,9 +87,6 @@ func TestSeedRerunPreservesProfilesAndSyncsRoles(t *testing.T) {
 func TestSeedRollsBackOnConflict(t *testing.T) {
 	conn := testDB(t)
 	ctx := context.Background()
-	if _, err := conn.Exec(ctx, schemaSQL); err != nil {
-		t.Fatal(err)
-	}
 	// Reserve a fixture ID for an unrelated user, forcing a conflict mid-seed.
 	if _, err := conn.Exec(ctx, `INSERT INTO users (id, firebase_uid, display_name)
 		VALUES ('00000000-0000-4000-8000-000000000003', 'unrelated-user', 'Existing User')`); err != nil {
