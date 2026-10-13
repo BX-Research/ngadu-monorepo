@@ -32,7 +32,7 @@ Firebase manages login identities. PostgreSQL stores application data linked to 
 | --- | --- | --- |
 | frontend | Frontend with its own package manifest and Bun lockfile | Generated Next.js starter |
 | backend | Separate Go backend | Health/readiness server and development seeder; application endpoints pending |
-| docs | Functional specification and PDF export | Markdown is the source of truth |
+| docs | Functional specification | Maintained in Markdown |
 
 Root Bun scripts delegate to the frontend; the Makefile also provides Go and local database commands. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.
 
@@ -197,7 +197,7 @@ The API distinguishes unauthenticated requests, denied access, invalid input, mi
 
 ## 13. Development and deployment
 
-`make dev` builds the Go backend, starts PostgreSQL through Docker Compose, waits for database health and backend readiness, and runs the backend and Next.js locally. Ctrl+C stops both app processes; PostgreSQL can be stopped separately with `make db-stop`. Its named volume persists across ordinary stops and restarts. `make seed` (also `make db-seed`) starts, migrates, and seeds the same local development database. `make db-migrate` applies migrations, `make db-status` shows migration status, and `make db-revision msg=NAME` creates a SQL template. All Make service/database commands target local development and ignore ambient DATABASE_URL. The Bun supervisor lives under backend/scripts. Root `.env` or shell variables configure local ports and development database credentials. Frontend/backend container images and SeaweedFS orchestration remain pending. Production storage and deployment remain undecided.
+`make dev` starts PostgreSQL through Docker Compose, waits for database health, applies migrations and seeds development fixtures, then runs the backend and Next.js concurrently through Make. The shell recipe waits for both processes; if one app exits, the other remains running until stopped. Ctrl+C stops both app processes; PostgreSQL can be stopped separately with `make db-stop`. Its named volume persists across ordinary stops and restarts. `make seed` (also `make db-seed`) starts, migrates, and seeds the same local development database. `make db-migrate` applies migrations, `make db-status` shows migration status, and `make db-revision msg=NAME` creates a SQL template. All Make service/database commands target local development and ignore ambient DATABASE_URL. Root `.env` or shell variables configure local ports and development database credentials. Frontend/backend container images and SeaweedFS orchestration remain pending. Production storage and deployment remain undecided.
 
 Development login may use a real Firebase development project, the Firebase Auth emulator, or both. Emulator tests simulate identities and do not prove genuine Google sign-in works. Production credentials and data stay separate from development.
 

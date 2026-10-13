@@ -33,8 +33,8 @@ with `CREATE TABLE IF NOT EXISTS`. Existing tables must match that original
 schema; future schema changes belong in new migrations. Write and review the
 SQL in each generated migration; creation does not infer schema changes.
 
-The shared development supervisor and its tests are also under `backend/scripts/`.
-It uses Bun to coordinate the local Go server and Next.js and handle shutdown.
+The root Makefile runs the local Go app and Next.js concurrently after database
+startup, migrations, and seeding. Its shell trap stops the app processes on exit.
 
 The script runs in one transaction and reports results after commit. It looks up
 users by Firebase UID, preserves existing display names, and reuses their stored

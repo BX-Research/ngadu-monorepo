@@ -4,7 +4,7 @@ BUN ?= bun
 GO ?= go
 DOCKER ?= docker
 
-.PHONY: help install install-frontend install-backend hooks dev dev-frontend dev-backend db-up db-stop db-down db-logs db-migrate db-status db-revision db-seed seed lint typecheck build start test-backend vet-backend test-dev check
+.PHONY: help install install-frontend install-backend hooks dev dev-frontend dev-backend db-up db-stop db-down db-logs db-migrate db-status db-revision db-seed seed lint typecheck build start test-backend vet-backend check
 
 help:
 	@printf '%s\n' \
@@ -22,10 +22,9 @@ help:
 	  'make typecheck        Run frontend TypeScript checks' \
 	  'make build            Build the frontend for production' \
 	  'make start            Start the built frontend' \
-	  'make test-dev         Run development supervisor tests' \
 	  'make test-backend     Run Go tests (DB tests need TEST_DATABASE_URL)' \
 	  'make vet-backend      Run Go static analysis' \
-	  'make check            Run supervisor tests, frontend checks, and Go tests/vet' \
+	  'make check            Run frontend checks and Go tests/vet' \
 	  'make hooks            Enable shared Git hooks in this clone'
 
 install: install-frontend install-backend hooks
@@ -39,8 +38,11 @@ install-backend:
 hooks:
 	$(BUN) run setup:hooks
 
-dev:
-	BUN_BIN="$(BUN)" GO_BIN="$(GO)" DOCKER_BIN="$(DOCKER)" $(BUN) backend/scripts/dev.mjs dev
+dev: db-seed
+	@trap 'trap - EXIT INT TERM; if jobs -p | read pid; then kill 0; fi' EXIT INT TERM; \
+	$(MAKE) dev-backend & \
+	$(MAKE) dev-frontend & \
+	wait
 
 dev-frontend:
 	$(BUN) run dev
@@ -88,9 +90,6 @@ build:
 start:
 	$(BUN) run start
 
-test-dev:
-	$(BUN) test backend/scripts/dev.test.mjs
-
 test-backend:
 	$(GO) -C backend test -v ./...
 
@@ -99,7 +98,6 @@ vet-backend:
 
 # Keep checks sequential, even with make -j: build and typecheck share generated files.
 check:
-	$(MAKE) test-dev
 	$(MAKE) lint
 	$(MAKE) typecheck
 	$(MAKE) build

@@ -12,7 +12,6 @@ ngadu-monorepo/
   backend/           # Go backend; API implementation pending
   docs/
     functional-spec.md
-    functional-spec.pdf
 ```
 
 Services share one Git repository and keep independent toolchains. The frontend manifest and lockfile remain in `frontend`. No extra monorepo build system is required initially.
@@ -25,22 +24,22 @@ From the repository root:
 
 ```bash
 make install     # Download dependencies for both services and enable Git hooks
-make dev         # Start Docker PostgreSQL, the Go backend, and the frontend
+make dev         # Start, migrate, and seed PostgreSQL, then run both apps
 make seed        # Start, migrate, and seed local Docker PostgreSQL
 make db-migrate  # Apply schema migrations with the Goose Go library
 make db-status   # Show applied and pending migrations
 make db-revision msg=add_matches # Create a SQL migration
-make check       # Supervisor tests, frontend lint/types/build, Go tests/vet
+make check       # Frontend lint/types/build, Go tests/vet
 make help        # List the available commands
 ```
 
-`make dev` builds the Go server, starts PostgreSQL and waits for its health check, then starts the backend and frontend. Open <http://127.0.0.1:3000>; backend liveness is at <http://127.0.0.1:8080/healthz> and database readiness at <http://127.0.0.1:8080/readyz>. The backend currently provides these operational endpoints only. Product API routes and frontend API integration remain pending. Restart `make dev` after changing Go code; Next.js reloads frontend edits automatically.
+`make dev` starts PostgreSQL and waits for its health check, applies migrations, seeds development fixtures, then runs `make dev-backend` and `make dev-frontend` concurrently. Open <http://127.0.0.1:3000>; backend liveness is at <http://127.0.0.1:8080/healthz> and database readiness at <http://127.0.0.1:8080/readyz>. The backend currently provides these operational endpoints only. Product API routes and frontend API integration remain pending. Restart `make dev` after changing Go code; Next.js reloads frontend edits automatically.
 
-Ctrl+C stops both app processes. PostgreSQL stays running; `make db-stop` stops it without deleting its named data volume. `make db-up` starts it again and `make db-logs` shows its logs. If either app exits unexpectedly, the supervisor stops the other and reports failure.
+Ctrl+C stops both app processes. PostgreSQL stays running; `make db-stop` stops it without deleting its named data volume. `make db-up` starts it again and `make db-logs` shows its logs. The recipe waits for both apps; if one exits, stop the remaining app with Ctrl+C.
 
 Optional local overrides are in [.env.example](.env.example); copy it to `.env`, or set the listed variables in your shell. Defaults are frontend port 3000, API port 8080, and database port 5432, all bound to localhost. The checked-in database password is a local development placeholder. Set a local password before first use. Changing database credentials after the volume is initialized requires updating the database role too; it does not reset existing data.
 
-`make seed` starts the same Docker database and writes the development fixtures described in the [seeder guide](backend/scripts/README.md). The supervisor lives in `backend/scripts/dev.mjs`. Migration and seed commands run Go directly, load root `.env`, and construct a local database URL from `DEV_DB_*`; they ignore ambient `DATABASE_URL` and PostgreSQL connection variables. All Make service/database commands target local development. Goose is pinned in `backend/go.mod`, so no separate Goose installation is needed. `make db-seed` aliases `make seed`, which applies migrations before inserting fixtures. Go database tests require `TEST_DATABASE_URL`; otherwise they are skipped. Existing Bun commands remain available. Use `make install-frontend` or `make install-backend` to install dependencies for one service.
+`make seed` starts the same Docker database and writes the development fixtures described in the [seeder guide](backend/scripts/README.md). Migration and seed commands run Go directly, load root `.env`, and construct a local database URL from `DEV_DB_*`; they ignore ambient `DATABASE_URL` and PostgreSQL connection variables. All Make service/database commands target local development. Goose is pinned in `backend/go.mod`, so no separate Goose installation is needed. `make db-seed` aliases `make seed`, which applies migrations before inserting fixtures. Go database tests require `TEST_DATABASE_URL`; otherwise they are skipped. Existing Bun commands remain available. Use `make install-frontend` or `make install-backend` to install dependencies for one service.
 
 Use `make dev-frontend` to start only Next.js. `make dev-backend` runs only the Go app (`go run ./cmd/api -dev`) with local development settings. Start PostgreSQL separately with `make db-up` (or `make db-seed` to migrate and seed it).
 
@@ -93,6 +92,6 @@ Firebase manages login identities; PostgreSQL will store application data linked
 
 ## Documentation
 
-Read [the functional specification](docs/functional-spec.md) or [its PDF export](docs/functional-spec.pdf). Confirmed choices are separated from proposed features and open decisions.
+Read [the functional specification](docs/functional-spec.md). Confirmed choices are separated from proposed features and open decisions.
 
 Read [AGENTS.md](AGENTS.md) and nested instructions before making changes. Keep credentials, environment files, dependencies, build files, and local service data out of Git.
