@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import AppSidebar from "../components/AppSidebar";
+import AppSocialRail from "../components/AppSocialRail";
+import AppHeader from "../components/AppHeader";
 import ProfilePortrait from "../components/ProfilePortrait";
 import SportsIllustration from "../components/SportsIllustration";
 import { demoMatchesSnapshot, getDemoStandings, parseDemoMatchesSnapshot, subscribeDemoMatches } from "../lib/demoMatches";
@@ -12,7 +14,7 @@ export default function LeaderboardRoute() {
   const snapshot = useSyncExternalStore(subscribeDemoMatches, demoMatchesSnapshot, () => null);
   const players = getDemoStandings(parseDemoMatchesSnapshot(snapshot ?? "[]"));
   const podium = [players[1], players[0], players[2]];
-  return <main className="app-shell"><AppSidebar/><section className="main-area"><header className="topbar"><div className="crumb">Workspace <span>/</span> Leaderboard</div><div className="top-actions"><span className="leader-season">🏸 Season 1</span></div></header><div className="content leaderboard-route">
+  return <main className="app-shell"><AppSidebar/><AppSocialRail/><section className="main-area"><AppHeader title="Leaderboard"><span className="leader-season">🏸 Season 1</span></AppHeader><div className="content leaderboard-route">
     <section className="leader-hero"><div className="leader-hero-copy"><span className="hero-kicker">🏸 &nbsp; NGADU CLUB RANKS</span><h1>Who’s on a<br/>winning streak?</h1><p>Every rally gets you closer to the top. Keep playing, keep climbing!</p><span className="hero-season">🏆 &nbsp; Season 1 · Singles + Doubles</span></div><div className="hero-doodle"><SportsIllustration/><span className="doodle-spark spark-a">✦</span><span className="doodle-spark spark-b">✧</span></div><span className="hero-ball ball-one">🏸</span><span className="hero-ball ball-two">🎾</span></section>
     <div className="podium-intro"><div><p className="eyebrow">THE BIG THREE</p><h2>Top players</h2></div><p>Current club standings</p></div>
     <section className="photo-podium" aria-label="Leaderboard top three">{podium.map((player,index)=>{const rank=index===1?1:index===0?2:3;return <article className={`photo-podium-card photo-rank-${rank}`} key={player.name}><div className="photo-medal">{medals[rank-1]}</div><ProfilePortrait className="profile-photo" variant={player.avatar} name={player.name}/><span className="photo-rank-label">RANK #{rank}</span><h3>{player.name}</h3><strong className="photo-elo">{player.elo.toLocaleString()} <small>ELO</small></strong><span className="photo-wins">✨ &nbsp;{player.wins} wins</span></article>})}</section>

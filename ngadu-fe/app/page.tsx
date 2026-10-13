@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import AppSidebar from "./components/AppSidebar";
+import AppSocialRail from "./components/AppSocialRail";
+import AppHeader from "./components/AppHeader";
 import ProfilePortrait from "./components/ProfilePortrait";
 import { demoMatchesSnapshot, DEMO_PLAYERS, getDemoStandings, parseDemoMatchesSnapshot, subscribeDemoMatches, type DemoMatch } from "./lib/demoMatches";
 
@@ -49,20 +51,28 @@ export default function Home() {
   const standings = getDemoStandings(createdMatches);
   const currentPlayer = standings.find((player) => player.id === DEMO_PLAYERS[0].id) ?? DEMO_PLAYERS[0];
   const playedMatches = matches.filter((match) => match.status === "completed");
-  const winRate = playedMatches.length ? Math.round(playedMatches.filter((match) => match.won).length / playedMatches.length * 100) : 0;
+  const winCount = playedMatches.filter((match) => match.won).length;
+  const winRate = playedMatches.length ? Math.round(winCount / playedMatches.length * 100) : 0;
   const lastCompleted = playedMatches[0];
   const lastChange = lastCompleted?.change ?? 0;
 
   return <main className="app-shell">
     <AppSidebar />
-    <section className="main-area"><header className="topbar"><div className="crumb">Workspace <span>/</span> {tab}</div><div className="top-actions"><button className="icon-button" aria-label="Notifications">♧</button><div className="avatar small">A</div></div></header>
-      <div className={`content ${tab === "Leaderboard" ? "leaderboard-view" : tab === "Matches" ? "matches-view" : ""}`}><div className="welcome"><div><p className="eyebrow">SUNDAY, OCTOBER 11</p><h1>{tab === "Overview" ? "Your game, your ranking." : tab}</h1><p className="subhead">Find your level. Play your game. Climb the ranks.</p></div><Link className="primary-button" href="/matches/new"><span>＋</span> Create a match</Link></div>
+    <AppSocialRail />
+    <section className="main-area"><AppHeader title={tab}><button className="icon-button" aria-label="Notifications">♧</button><div className="avatar small">A</div></AppHeader>
+      <div className={`content ${tab === "Leaderboard" ? "leaderboard-view" : tab === "Matches" ? "matches-view" : ""}`}>
+        <section className="home-hero" aria-labelledby="home-hero-title">
+          <div className="home-hero-copy"><span className="home-hero-kicker"><span>🏸</span> BADMINTON · YOUR COMMUNITY</span><h1 id="home-hero-title">Own every<br/>rally.</h1><p>Get on court, log your matches, and watch your ranking grow.</p><Link className="primary-button" href="/matches/new"><span>＋</span> Create a match</Link></div>
+          <span className="home-hero-art" aria-hidden="true"/><span className="home-hero-shuttle" aria-hidden="true"/>
+          <div className="home-hero-stamp"><span>PLAY</span><strong>YOUR</strong><span>GAME</span></div>
+        </section>
 
         {tab === "Leaderboard" && <LeaderboardPage />}
         {tab === "Matches" && <MatchesHistory matches={matches} />}
-        <div className="stat-grid"><article className="stat-card rating-card"><div className="stat-top"><span>YOUR ELO RATING</span><span className="live-dot">● LIVE</span></div><div className="rating-value">{currentPlayer.elo.toLocaleString()}<span>pts</span></div><div className="stat-foot"><span className={lastChange >= 0 ? "up" : "down"}>{lastChange > 0 ? "↗ +" : lastChange < 0 ? "↘ " : ""}{lastChange} pts</span><span>last completed match</span><span className="rating-badge">Demo rating</span></div><div className="sparkline"><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
-          <article className="stat-card"><div className="stat-top">MATCHES PLAYED <span className="stat-icon">⌁</span></div><div className="stat-number">{matches.filter(m => m.status === "completed").length}<span className="muted"> matches</span></div><div className="stat-foot"><span className="neutral">This season</span></div><div className="mini-bars">{[24,38,31,54,43,66,50,72,59,84,68,95].map((h,i)=><i key={i} style={{height:`${h}%`}}/>)}</div></article>
-          <article className="stat-card"><div className="stat-top">WIN RATE <span className="stat-icon">◎</span></div><div className="stat-number">{winRate}<span className="percent">%</span></div><div className="stat-foot"><span className="up">↗ +4.2%</span><span>vs last month</span></div><div className="progress"><i style={{ width: `${winRate}%` }}/></div></article></div>
+        <div className="vertical-section-intro"><span>YOUR SEASON</span><h2>At a glance</h2></div>
+        <div className="stat-grid"><article className="stat-card rating-card"><div className="stat-top"><span>YOUR ELO RATING</span><span className="live-dot">● DEMO</span></div><div className="rating-value">{currentPlayer.elo.toLocaleString()}<span>pts</span></div><div className="stat-foot"><span className="up">{lastChange > 0 ? "↗ +" : lastChange < 0 ? "↘ " : ""}{lastChange} pts</span><span>last completed match</span><span className="rating-badge">Demo rating</span></div><div className="sparkline"><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/></div></article>
+          <article className="stat-card"><div className="stat-top">MATCHES PLAYED <span className="stat-icon">⌁</span></div><div className="stat-number">{playedMatches.length}<span className="muted">{playedMatches.length === 1 ? " match" : " matches"}</span></div><div className="stat-foot"><span className="neutral">This season</span></div><div className="mini-bars">{[24,38,31,54,43,66,50,72,59,84,68,95].map((h,i)=><i key={i} style={{height:`${h}%`}}/>)}</div></article>
+          <article className="stat-card"><div className="stat-top">WIN RATE <span className="stat-icon">◎</span></div><div className="stat-number">{winRate}<span className="percent">%</span></div><div className="stat-foot"><span className="neutral">{winCount} {winCount === 1 ? "win" : "wins"}</span><span>from {playedMatches.length} finished</span></div><div className="progress"><i style={{ width: `${winRate}%` }}/></div></article></div>
 
         <div className="section-heading"><div><h2>Recent matches</h2><p>Your latest games and rating changes</p></div><Link className="text-button" href="/matches">View all <span>→</span></Link></div>
         <div className="matches-table"><div className="table-head"><span>OPPONENT</span><span>GAME TYPE</span><span>RESULT</span><span>RATING CHANGE</span><span>DATE</span></div>{matches.map((match) => <div className="match-row" key={match.id}><div className="player-cell"><div className="overview-avatar-stack">{match.opponent.split(" & ").map((name) => { const player = DEMO_PLAYERS.find((candidate) => candidate.name === name); return <ProfilePortrait key={name} className="overview-profile-avatar" variant={player?.avatar ?? 0} name={name}/>; })}</div><div><strong>{match.opponent}</strong><small>ELO {match.opponentRating}</small></div></div><span className="format-pill">{match.sport} · {match.format}</span><span className={`result ${match.status === "upcoming" ? "pending" : match.won ? "win" : "loss"}`}>{match.status === "upcoming" ? "Awaiting score" : `${match.won ? "Won" : "Lost"} ${match.score?.[0]}–${match.score?.[1]}`}</span><span className={match.change && match.change < 0 ? "down" : "up"}>{match.status === "upcoming" ? "—" : `${(match.change ?? 0) > 0 ? "+" : ""}${match.change} pts`}</span><span className="date-cell">{match.date}</span></div>)}</div>

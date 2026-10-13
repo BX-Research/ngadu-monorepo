@@ -1,0 +1,110 @@
+/* Curama-inspired vertical browsing, tuned for Ngadu's mobile-first match flow. */
+.home-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 308px;
+  align-items: center;
+  overflow: hidden;
+  margin: 0 0 23px;
+  padding: 23px 20px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 22px;
+  background-color: #1d3029;
+  background-image: url("/badminton-shuttle-racket.jpg");
+  background-position: 54% 47%;
+  background-size: cover;
+  box-shadow: 0 12px 30px rgb(35 48 40 / 13%);
+  color: #fff;
+}
+.home-hero::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(27 43 36 / 98%) 0%, rgb(27 43 36 / 91%) 43%, rgb(27 43 36 / 35%) 78%, rgb(27 43 36 / 8%) 100%);
+  content: "";
+  pointer-events: none;
+}
+.home-hero-copy { position: relative; z-index: 2; width: min(100%, 258px); }
+.home-hero-kicker { display: flex; align-items: center; gap: 7px; margin: 0 0 13px; color: #ffd1b5; font-size: 9px; font-weight: 780; letter-spacing: 1.05px; }
+.home-hero-kicker > span { display: grid; width: 24px; height: 24px; place-items: center; border: 1px solid rgb(255 255 255 / 19%); border-radius: 8px; background: rgb(255 255 255 / 10%); font-size: 13px; }
+.home-hero h1 { margin: 0; color: #fffaf5; font-size: clamp(35px, 9vw, 43px); font-weight: 790; letter-spacing: -1.7px; line-height: .98; }
+.home-hero p { max-width: 235px; margin: 11px 0 17px; color: rgb(255 250 245 / 77%); font-size: 12px; line-height: 1.55; }
+.home-hero .primary-button { min-height: 45px; padding: 0 15px; border-radius: 13px; background: #fff8f1; box-shadow: 0 3px 0 #e9b99e; color: #a33c1d; font-size: 12px; font-weight: 780; }
+.home-hero .primary-button:hover { background: #fff; }
+.home-hero-art { display: none; }
+.home-hero-shuttle { position: absolute; z-index: 1; top: 13px; right: 12px; width: 51px; height: 48px; background: url("/shuttlecock-mark.svg") center / contain no-repeat; opacity: .75; transform: rotate(13deg); }
+.home-hero-stamp { position: absolute; z-index: 2; right: 15px; bottom: 13px; display: grid; width: 48px; height: 48px; align-content: center; justify-items: center; border: 1px solid rgb(255 255 255 / 45%); border-radius: 50%; background: rgb(255 255 255 / 88%); color: #9e3b1e; font-size: 6px; font-weight: 780; line-height: 1.1; transform: rotate(10deg); }
+.home-hero-stamp strong { font-size: 9px; letter-spacing: .3px; }
+.vertical-section-intro { margin: 0 0 11px; }
+.vertical-section-intro > span { color: #89948c; font-size: 9px; font-weight: 790; letter-spacing: 1.05px; }
+.vertical-section-intro h2 { margin: 3px 0 0; color: #26352d; font-size: 19px; font-weight: 760; letter-spacing: -.45px; }
+
+.social-rail { display: none; }
+
+@media (min-width: 741px) {
+  .home-hero { min-height: 314px; margin-bottom: 25px; padding: 30px 32px; border-radius: 23px; }
+  .home-hero-copy { width: min(53%, 395px); }
+  .home-hero-kicker { margin-bottom: 15px; font-size: 10px; }
+  .home-hero h1 { font-size: clamp(42px, 4.4vw, 54px); }
+  .home-hero p { max-width: 300px; margin: 13px 0 18px; font-size: 13px; }
+  .home-hero-art { background-size: auto 100%; }
+  .home-hero-shuttle { top: 20px; right: 23px; width: 68px; height: 62px; }
+  .home-hero-stamp { right: 26px; bottom: 20px; width: 57px; height: 57px; }
+  .home-hero-stamp strong { font-size: 10px; }
+}
+
+@media (min-width: 1100px) {
+  .main-area { width: calc(100% - 462px); margin-right: 244px; }
+  .content { max-width: 1050px; }
+  .social-rail {
+    position: fixed;
+    z-index: 50;
+    top: 112px;
+    right: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .social-icon {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid #e7e9e1;
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 5px 17px rgb(32 45 39 / 8%);
+  }
+  .social-icon svg { display: block; width: 21px; height: 21px; }
+  .social-tiktok { color: #171717; }
+  .social-tiktok svg, .social-github svg { fill: currentColor; }
+  .social-instagram { color: #c13584; }
+  .social-instagram svg { fill: none; stroke: currentColor; stroke-width: 1.8; }
+  .social-instagram .social-icon-dot { fill: currentColor; stroke: none; }
+  .social-github { color: #202124; }
+}
+
+@media (max-width: 740px) {
+  .home-hero { min-height: 316px; }
+  .home-hero-art { background-size: auto 78%; background-position: right -29px bottom; opacity: .85; }
+  .home-hero::before { background: linear-gradient(90deg, rgb(27 43 36 / 98%) 0%, rgb(27 43 36 / 91%) 49%, rgb(27 43 36 / 38%) 83%, rgb(27 43 36 / 14%) 100%); }
+  .home-hero-copy { width: min(73%, 255px); }
+  .home-hero-stamp { right: 12px; bottom: 12px; width: 42px; height: 42px; }
+}
+
+@media (max-width: 360px) {
+  .home-hero { min-height: 300px; padding: 18px 15px; }
+  .home-hero-copy { width: 75%; }
+  .home-hero-kicker { gap: 4px; font-size: 7.5px; letter-spacing: .5px; white-space: nowrap; }
+  .home-hero-kicker > span { width: 21px; height: 21px; }
+  .home-hero h1 { font-size: 34px; }
+  .home-hero p { max-width: 180px; font-size: 11px; }
+  .home-hero-art { background-size: auto 72%; background-position: right -41px bottom; }
+  .home-hero-shuttle { right: 7px; width: 42px; height: 40px; }
+}
