@@ -16,7 +16,7 @@ go run ./scripts/seed
 
 Alternatively, run `make seed` from the repository root. It starts the Docker PostgreSQL service and constructs its local connection settings from root `.env` or `DEV_DB_*` shell variables (see [the example](../../.env.example)). It uses that local database rather than an ambient `DATABASE_URL`. Run `make install-backend` first to download Go dependencies. Direct `go run` commands use the environment described above and do not start Docker.
 
-This requires Go 1.25 or newer. The `pgx` driver reads the PostgreSQL environment
+This requires Go 1.26 or newer, as declared in `backend/go.mod`. The `pgx` driver reads the PostgreSQL environment
 variables above and a local PostgreSQL password file if needed. Alternatively,
 set `DATABASE_URL` to your development connection string. Never commit
 credentials. The command does not load `.env` files automatically.
