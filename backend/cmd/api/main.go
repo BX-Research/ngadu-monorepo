@@ -33,6 +33,7 @@ func newHandler(ping func(context.Context) error) http.Handler {
 		}
 		respond(w, http.StatusOK, "ready")
 	})
+	registerUserRoutes(mux, findUser)
 	return mux
 }
 

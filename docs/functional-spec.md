@@ -31,12 +31,12 @@ Firebase manages login identities. PostgreSQL stores application data linked to 
 | Directory | Purpose | Current state |
 | --- | --- | --- |
 | frontend | Frontend with its own package manifest and Bun lockfile | Generated Next.js starter |
-| backend | Separate Go backend | Health/readiness server and development seeder; application endpoints pending |
+| backend | Separate Go backend | Health/readiness server, local user lookup, and development seeder; protected application endpoints pending |
 | docs | Functional specification | Maintained in Markdown |
 
 Root Bun scripts delegate to the frontend; the Makefile also provides Go and local database commands. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.
 
-The Go backend provides operational health/readiness endpoints. Goose SQL migrations define the current minimal schema. A separate development seeder inserts fixture data. Migration and seed commands are Go programs under backend/scripts; no standalone Goose installation is required. Docker Compose runs local PostgreSQL. Firebase integration and application API endpoints remain unimplemented; the frontend uses demo data. The following sections describe proposed application behavior.
+The Go backend provides operational health/readiness endpoints. Goose SQL migrations define the current minimal schema. A separate development seeder inserts fixture data. Migration and seed commands are Go programs under backend/scripts; no standalone Goose installation is required. Docker Compose runs local PostgreSQL. A local development GET /api/users/{id} endpoint queries a user by application UUID and returns id, firebase_uid, display_name, and created_at. It returns 400 for invalid UUIDs, 404 for missing users, and 503 for database failures. This inspection endpoint has no authentication or membership checks; Firebase integration and protected application API endpoints remain unimplemented; the frontend uses demo data. The following sections describe proposed application behavior.
 
 ## 4. Proposed first release
 
