@@ -3,11 +3,9 @@ package devdb
 
 import (
 	"fmt"
-	"net"
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -60,27 +58,8 @@ func URL() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	port := setting("DEV_DB_PORT", "5432")
-	n, err := strconv.Atoi(port)
-	if err != nil || n < 1 || n > 65535 {
-		return "", fmt.Errorf("DEV_DB_PORT must be a port between 1 and 65535")
-	}
-	u := &url.URL{Scheme: "postgresql", Host: net.JoinHostPort("127.0.0.1", port),
+	u := &url.URL{Scheme: "postgresql", Host: "127.0.0.1:5432",
 		User: url.UserPassword(setting("DEV_DB_USER", "ngadu"), setting("DEV_DB_PASSWORD", "change-me-local-only")),
 		Path: "/" + setting("DEV_DB_NAME", "ngadu_dev"), RawQuery: "sslmode=disable"}
 	return u.String(), nil
-}
-
-// APIAddress loads the local API port from root .env or the shell.
-func APIAddress() (string, error) {
-	setting, err := settings()
-	if err != nil {
-		return "", err
-	}
-	port := setting("API_PORT", "8080")
-	n, err := strconv.Atoi(port)
-	if err != nil || n < 1 || n > 65535 {
-		return "", fmt.Errorf("API_PORT must be a port between 1 and 65535")
-	}
-	return net.JoinHostPort("127.0.0.1", port), nil
 }

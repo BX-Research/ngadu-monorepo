@@ -74,17 +74,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	address, err := devdb.APIAddress()
-	if err != nil {
-		log.Fatal(err)
-	}
 	if err := os.Setenv("DATABASE_URL", connectionURL); err != nil {
 		log.Fatal(err)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	listener, err := net.Listen("tcp", address)
+	listener, err := net.Listen("tcp", "127.0.0.1:8080")
 	if err != nil {
 		log.Fatal(err)
 	}
