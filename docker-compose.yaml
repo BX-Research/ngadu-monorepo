@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${DEV_DB_USER:-ngadu}
+      POSTGRES_PASSWORD: ${DEV_DB_PASSWORD:-change-me-local-only}
+      POSTGRES_DB: ${DEV_DB_NAME:-ngadu_dev}
+    ports:
+      - '127.0.0.1:${DEV_DB_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
+volumes:
+  postgres-data:

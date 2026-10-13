@@ -5,7 +5,7 @@ cd "$(git rev-parse --show-toplevel)"
 
 # Inspect both sides of renames and include deletions. Markdown alone needs no app checks.
 if git diff --cached --quiet --no-renames -- \
-  frontend/ package.json .githooks/ \
+  frontend/ package.json Makefile docker-compose.yaml scripts/ .githooks/ \
   ':(glob,exclude)**/*.md'; then
   exit 0
 else

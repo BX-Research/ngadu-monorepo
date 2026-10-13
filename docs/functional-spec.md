@@ -2,7 +2,7 @@
 
 Status: Draft for review
 
-Date: 2026-10-11
+Date: 2026-10-13
 
 ## 1. Purpose
 
@@ -15,26 +15,27 @@ Build Ngadu, a web app that helps a community of friends organize badminton sess
 | Repository | Monorepo | Frontend, backend, and documentation in one Git repository |
 | Frontend | Next.js, React, TypeScript | Pages, navigation, rendering, browser interaction |
 | Frontend tooling and runtime | Bun | Dependencies and running the Next.js server |
+| Backend language | Go | Separate API service and authoritative application rules |
 | Authentication | Firebase Authentication | Google login and user identity |
 | Application database | PostgreSQL | Profiles, memberships, sessions, matches |
 | Development file storage | SeaweedFS | Uploaded files when uploads are included |
-| Local infrastructure | Docker and Docker Compose | Intended local service orchestration |
+| Local infrastructure | Docker and Docker Compose | Local PostgreSQL; Next.js and Go run on the host for development |
 
-The backend will be a separate service. Its language, framework, database library, migration tooling, and build commands are undecided. Rust was discussed but is not a selected technology. Production hosting and storage remain undecided.
+The backend will be a separate Go service. Its HTTP framework, API database library, migration tooling, and production build/deployment configuration remain undecided. Production hosting and storage remain undecided.
 
-Firebase manages login identities. PostgreSQL stores application data linked to the verified Firebase UID. Firebase Authentication does not require Firestore. Whatever backend language is selected must support secure Firebase token verification.
+Firebase manages login identities. PostgreSQL stores application data linked to the verified Firebase UID. Firebase Authentication does not require Firestore. The Go backend must securely verify Firebase ID tokens.
 
 ## 3. Monorepo organization and current state
 
 | Directory | Purpose | Current state |
 | --- | --- | --- |
 | frontend | Frontend with its own package manifest and Bun lockfile | Generated Next.js starter |
-| backend | Future separate backend | Placeholder documentation; no implementation |
+| backend | Separate Go backend | Health/readiness server and development seeder; application endpoints pending |
 | docs | Functional specification and PDF export | Markdown is the source of truth |
 
-Root scripts delegate to the frontend. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.
+Root Bun scripts delegate to the frontend; the Makefile also provides Go and local database commands. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.
 
-Firebase integration, backend endpoints, database schema, Docker services, and badminton features have not been implemented. The following sections describe proposed application behavior.
+The Go backend provides operational health/readiness endpoints. A development seeder defines a minimal bootstrap schema and fixture data; this does not settle production migrations. Docker Compose runs local PostgreSQL. Firebase integration and application API endpoints remain unimplemented; the frontend uses demo data. The following sections describe proposed application behavior.
 
 ## 4. Proposed first release
 
@@ -181,7 +182,7 @@ This is a conceptual model, not a final schema. Invitation acceptance, capacity 
 
 Next.js handles rendering and browser interaction. The separate backend owns authoritative application rules, token verification, permissions, PostgreSQL operations, and authorized uploads. Browsers do not access PostgreSQL directly.
 
-REST with JSON is proposed, not selected. API schemas, session transport, and whether to use a same-origin proxy or a separate API origin remain open. Backend implementation details stay undecided.
+REST with JSON is proposed, not selected. API schemas, session transport, and whether to use a same-origin proxy or a separate API origin remain open. Backend language is Go; the HTTP framework and remaining API tooling stay undecided.
 
 ## 12. Optional uploads and access protection
 
@@ -195,7 +196,7 @@ The API distinguishes unauthenticated requests, denied access, invalid input, mi
 
 ## 13. Development and deployment
 
-Docker Compose is intended to run Next.js on Bun, the future backend, PostgreSQL, and SeaweedFS separately. Backend images and Compose configuration will be added once requirements are settled. Database and storage volumes should persist across ordinary restarts.
+`make dev` builds the Go backend, starts PostgreSQL through Docker Compose, waits for database health and backend readiness, and runs the backend and Next.js locally. Ctrl+C stops both app processes; PostgreSQL can be stopped separately with `make db-stop`. Its named volume persists across ordinary stops and restarts. `make seed` starts and seeds the same local development database. Root `.env` or shell variables configure local ports and development database credentials. Frontend/backend container images and SeaweedFS orchestration remain pending. Production storage and deployment remain undecided.
 
 Development login may use a real Firebase development project, the Firebase Auth emulator, or both. Emulator tests simulate identities and do not prove genuine Google sign-in works. Production credentials and data stay separate from development.
 
@@ -223,7 +224,7 @@ These scenarios validate the proposed baseline once its scope is accepted:
 
 | Decision | Open question |
 | --- | --- |
-| Backend stack | Language, framework, database library, migration tools |
+| Backend tooling | HTTP framework, API database library, migration tools, production build/deployment configuration |
 | Membership | Invite-only, organizer approval, or another policy |
 | Invitations | Shared/personal links, expiration and usage defaults |
 | Community scope | One or multiple communities |
@@ -239,4 +240,4 @@ These scenarios validate the proposed baseline once its scope is accepted:
 | Development login | Real Firebase project, emulator, or both |
 | Uploads | Whether the first release needs uploaded files |
 
-Confirmed technology choices remain stable while these questions are resolved. Proposed features and the backend language are not implied commitments.
+Confirmed technology choices remain stable while these questions are resolved. Proposed features and unselected backend tooling are not implied commitments.
