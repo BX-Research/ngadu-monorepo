@@ -41,7 +41,7 @@ Optional local overrides are in [.env.example](.env.example); copy it to `.env`,
 
 `make seed` starts the same Docker database and writes the development fixtures described in the [seeder guide](backend/scripts/README.md). Migration and seed commands run Go directly, load root `.env`, and construct a local database URL from `DEV_DB_*`; they ignore ambient `DATABASE_URL` and PostgreSQL connection variables. All Make service/database commands target local development. Goose is pinned in `backend/go.mod`, so no separate Goose installation is needed. `make db-seed` aliases `make seed`, which applies migrations before inserting fixtures. Go database tests require `TEST_DATABASE_URL`; otherwise they are skipped. Existing Bun commands remain available. Use `make install-frontend` or `make install-backend` to install dependencies for one service.
 
-Use `make dev-frontend` to start only Next.js. `make dev-backend` runs only the Go app (`go run ./cmd/api -dev`) with local development settings. Start PostgreSQL separately with `make db-up` (or `make db-seed` to migrate and seed it).
+Use `make dev-frontend` to start only Next.js. `make dev-backend` runs only the Go app (`go run ./cmd/api`) with local development settings. Start PostgreSQL separately with `make db-up` (or `make db-seed` to migrate and seed it).
 
 ## Frontend development
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"flag"
 	"log"
 	"net"
 	"net/http"
@@ -70,31 +69,20 @@ func serve(ctx context.Context, listener net.Listener, handler http.Handler) err
 }
 
 func main() {
-	development := flag.Bool("dev", false, "use local development database and API settings")
-	flag.Parse()
-	if *development {
-		connectionURL, err := devdb.URL()
-		if err != nil {
-			log.Fatal(err)
-		}
-		address, err := devdb.APIAddress()
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := os.Setenv("DATABASE_URL", connectionURL); err != nil {
-			log.Fatal(err)
-		}
-		if err := os.Setenv("API_ADDR", address); err != nil {
-			log.Fatal(err)
-		}
+	connectionURL, err := devdb.URL()
+	if err != nil {
+		log.Fatal(err)
+	}
+	address, err := devdb.APIAddress()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := os.Setenv("DATABASE_URL", connectionURL); err != nil {
+		log.Fatal(err)
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	address := os.Getenv("API_ADDR")
-	if address == "" {
-		address = "127.0.0.1:8080"
-	}
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatal(err)
