@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -32,7 +31,7 @@ func TestUserRoute(t *testing.T) {
 		{"unsupported method", "POST", "/api/users/" + id, nil, 405, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			mux := http.NewServeMux()
+			mux := fiber.New()
 			called := false
 			registerUserRoutes(mux, func(ctx context.Context, got string) (userInfo, error) {
 				called = true
@@ -44,24 +43,23 @@ func TestUserRoute(t *testing.T) {
 				}
 				return userInfo{ID: id, FirebaseUID: "seed-user-avery", DisplayName: "Avery Demo", CreatedAt: created}, tc.err
 			})
-			w := httptest.NewRecorder()
-			mux.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, nil))
-			if w.Code != tc.status || called != tc.called {
-				t.Fatalf("status=%d called=%v body=%s", w.Code, called, w.Body.String())
+			w, body := testRequest(t, mux, tc.method, tc.path)
+			if w.StatusCode != tc.status || called != tc.called {
+				t.Fatalf("status=%d called=%v body=%s", w.StatusCode, called, string(body))
 			}
-			if strings.Contains(w.Body.String(), "private") {
+			if strings.Contains(string(body), "private") {
 				t.Fatal("database details exposed")
 			}
 			if tc.status == 200 {
 				var got userInfo
-				if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+				if err := json.Unmarshal(body, &got); err != nil {
 					t.Fatal(err)
 				}
 				if got.ID != id || got.FirebaseUID != "seed-user-avery" || got.DisplayName != "Avery Demo" || !got.CreatedAt.Equal(created) {
 					t.Fatalf("unexpected user: %+v", got)
 				}
 			}
-			if tc.status != 405 && w.Header().Get("Content-Type") != "application/json" {
+			if tc.status != 405 && w.Header.Get("Content-Type") != "application/json" {
 				t.Fatal("expected JSON response")
 			}
 		})
@@ -69,10 +67,9 @@ func TestUserRoute(t *testing.T) {
 }
 
 func TestUserRouteRegistered(t *testing.T) {
-	w := httptest.NewRecorder()
-	newHandler(func(context.Context) error { return nil }).ServeHTTP(w, httptest.NewRequest("GET", "/api/users/invalid", nil))
-	if w.Code != 400 {
-		t.Fatalf("route missing: status %d", w.Code)
+	w, _ := testRequest(t, newHandler(func(context.Context) error { return nil }), "GET", "/api/users/invalid")
+	if w.StatusCode != 400 {
+		t.Fatalf("route missing: status %d", w.StatusCode)
 	}
 }
 

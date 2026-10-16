@@ -16,13 +16,14 @@ Build Ngadu, a web app that helps a community of friends organize badminton sess
 | Frontend | Next.js, React, TypeScript | Pages, navigation, rendering, browser interaction |
 | Frontend tooling and runtime | Bun | Dependencies and running the Next.js server |
 | Backend language | Go | Separate API service and authoritative application rules |
+| HTTP framework | Fiber v3 | Routing, HTTP handlers, and server lifecycle |
 | Authentication | Firebase Authentication | Google login and user identity |
 | Application database | PostgreSQL | Profiles, memberships, sessions, matches |
 | Schema migrations | Goose as a Go library | Versioned SQL migrations under backend/migrations |
 | Development file storage | SeaweedFS | Uploaded files when uploads are included |
 | Local infrastructure | Docker and Docker Compose | Local PostgreSQL; Next.js and Go run on the host for development |
 
-The backend will be a separate Go service. Its HTTP framework, API database library, and production build/deployment configuration remain undecided. Production hosting and storage remain undecided.
+The backend will be a separate Go service. Fiber v3 is the selected HTTP framework. The API database library and production build/deployment configuration remain undecided. Production hosting and storage remain undecided.
 
 Firebase manages login identities. PostgreSQL stores application data linked to the verified Firebase UID. Firebase Authentication does not require Firestore. The Go backend must securely verify Firebase ID tokens.
 
@@ -36,7 +37,7 @@ Firebase manages login identities. PostgreSQL stores application data linked to 
 
 Root Bun scripts delegate to the frontend; the Makefile also provides Go and local database commands. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.
 
-The Go backend provides operational health/readiness endpoints. Goose SQL migrations define the current minimal schema. A separate development seeder inserts fixture data. Migration and seed commands are Go programs under backend/scripts; no standalone Goose installation is required. Docker Compose runs local PostgreSQL. A local development GET /api/users/{id} endpoint queries a user by application UUID and returns id, firebase_uid, display_name, and created_at. It returns 400 for invalid UUIDs, 404 for missing users, and 503 for database failures. This inspection endpoint has no authentication or membership checks; Firebase integration and protected application API endpoints remain unimplemented; the frontend uses demo data. The following sections describe proposed application behavior.
+The Go backend provides operational health/readiness endpoints. Goose SQL migrations define the current minimal schema. A separate development seeder inserts fixture data. Migrations run through a Go program under backend/scripts; no standalone Goose installation is required. Development fixtures live in backend/seeds/dev.sql and run through psql inside the local Compose database container. Docker Compose runs local PostgreSQL. A local development GET /api/users/{id} endpoint queries a user by application UUID and returns id, firebase_uid, display_name, and created_at. It returns 400 for invalid UUIDs, 404 for missing users, and 503 for database failures. This inspection endpoint has no authentication or membership checks; Firebase integration and protected application API endpoints remain unimplemented; the frontend uses demo data. The following sections describe proposed application behavior.
 
 ## 4. Proposed first release
 
@@ -183,7 +184,7 @@ This is a conceptual model, not a final schema. Invitation acceptance, capacity 
 
 Next.js handles rendering and browser interaction. The separate backend owns authoritative application rules, token verification, permissions, PostgreSQL operations, and authorized uploads. Browsers do not access PostgreSQL directly.
 
-REST with JSON is proposed, not selected. API schemas, session transport, and whether to use a same-origin proxy or a separate API origin remain open. Backend language is Go; the HTTP framework and remaining API tooling stay undecided.
+REST with JSON is proposed, not selected. API schemas, session transport, and whether to use a same-origin proxy or a separate API origin remain open. Backend language is Go; Fiber v3 is the selected HTTP framework; remaining API tooling stays undecided.
 
 ## 12. Optional uploads and access protection
 
@@ -225,7 +226,7 @@ These scenarios validate the proposed baseline once its scope is accepted:
 
 | Decision | Open question |
 | --- | --- |
-| Backend tooling | HTTP framework, API database library, production build/deployment configuration |
+| Backend tooling | API database library, production build/deployment configuration |
 | Membership | Invite-only, organizer approval, or another policy |
 | Invitations | Shared/personal links, expiration and usage defaults |
 | Community scope | One or multiple communities |

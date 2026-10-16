@@ -76,7 +76,7 @@ db-revision:
 db-seed: seed
 
 seed: db-migrate
-	$(GO) -C backend run ./scripts/seed
+	$(DOCKER) compose exec -T db sh -c 'exec psql -X --set=ON_ERROR_STOP=1 --username="$$POSTGRES_USER" --dbname="$$POSTGRES_DB"' < backend/seeds/dev.sql
 
 lint:
 	$(BUN) run lint

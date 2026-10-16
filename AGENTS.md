@@ -7,12 +7,12 @@ This monorepo contains Ngadu, a badminton matchmaking app for a community of fri
 ## Layout
 
 - `frontend/`: Next.js, React, and TypeScript frontend using Bun. Read its nested `AGENTS.md` before frontend edits.
-- `backend/`: Go backend. The HTTP framework, API database library, and production build/deployment configuration remain undecided. Add dependencies only for agreed work; existing development utilities do not settle all API tooling choices.
+- `backend/`: Go backend. Fiber v3 is the selected HTTP framework. The API database library and production build/deployment configuration remain undecided. Add dependencies only for agreed work; existing development utilities do not settle all API tooling choices.
 - `docs/`: functional specification maintained in Markdown.
 
 ## Confirmed architecture
 
-Next.js runs on Bun. A separate Go backend will verify Firebase Authentication ID tokens, enforce community permissions, query PostgreSQL, and handle SeaweedFS uploads if uploads are included. Firebase provides Google login; it does not require Firestore. SeaweedFS is selected for development. Docker Compose runs local PostgreSQL; `make dev` starts the database container and runs Next.js and Go locally. SeaweedFS orchestration is pending. Production hosting and storage remain undecided.
+Next.js runs on Bun. A separate Go backend using Fiber v3 will verify Firebase Authentication ID tokens, enforce community permissions, query PostgreSQL, and handle SeaweedFS uploads if uploads are included. Firebase provides Google login; it does not require Firestore. SeaweedFS is selected for development. Docker Compose runs local PostgreSQL; `make dev` starts the database container and runs Next.js and Go locally. SeaweedFS orchestration is pending. Production hosting and storage remain undecided.
 
 ## Development commands
 

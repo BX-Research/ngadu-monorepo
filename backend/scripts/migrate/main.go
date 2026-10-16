@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/BX-Research/ngadu-monorepo/backend/internal/devdb"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
-	"ngadu/backend/internal/devdb"
 )
 
 func run(args []string) error {

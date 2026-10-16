@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/gofiber/fiber/v3"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -28,12 +30,11 @@ func TestHealthRoutes(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			handler := newHandler(func(context.Context) error { return test.pingError })
-			response := httptest.NewRecorder()
-			handler.ServeHTTP(response, httptest.NewRequest(test.method, test.path, nil))
-			if response.Code != test.wantStatus || strings.TrimSpace(response.Body.String()) != test.wantBody {
-				t.Fatalf("got %d %q", response.Code, response.Body.String())
+			response, body := testRequest(t, handler, test.method, test.path)
+			if response.StatusCode != test.wantStatus || strings.TrimSpace(string(body)) != test.wantBody {
+				t.Fatalf("got %d %q", response.StatusCode, string(body))
 			}
-			if strings.Contains(response.Body.String(), "private") {
+			if strings.Contains(string(body), "private") {
 				t.Fatal("database details exposed")
 			}
 		})
@@ -63,4 +64,18 @@ func TestServerStopsOnCancellation(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("server did not stop")
 	}
+}
+
+func testRequest(t *testing.T, app *fiber.App, method, path string) (*http.Response, []byte) {
+	t.Helper()
+	response, err := app.Test(httptest.NewRequest(method, path, nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return response, body
 }
