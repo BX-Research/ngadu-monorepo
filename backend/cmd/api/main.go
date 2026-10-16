@@ -12,8 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/BX-Research/ngadu-monorepo/backend/internal/devdb"
 	"github.com/jackc/pgx/v5"
-	"ngadu/backend/internal/devdb"
 )
 
 func newHandler(ping func(context.Context) error) http.Handler {
