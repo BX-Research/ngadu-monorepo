@@ -3,13 +3,13 @@ module github.com/BX-Research/ngadu-monorepo/backend
 go 1.26.0
 
 require (
+	github.com/gofiber/fiber/v3 v3.6.1
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.27.3
 )
 
 require (
-	github.com/gofiber/fiber/v3 v3.6.1 // indirect
 	github.com/gofiber/schema v1.8.8 // indirect
 	github.com/gofiber/utils/v2 v2.6.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect

@@ -83,7 +83,7 @@ Agents use the shared [PR skill](.agents/skills/pr/SKILL.md), available as `$pr`
 
 - Frontend: Next.js, React, TypeScript, and Bun.
 - Authentication: Firebase Authentication with Google sign-in.
-- Backend: separate Go service; HTTP framework and remaining API tooling are undecided.
+- Backend: separate Go service using Fiber v3; remaining API tooling is undecided.
 - Application database: PostgreSQL.
 - Development file storage: SeaweedFS.
 - Local development: Docker Compose runs PostgreSQL; `make dev` runs Next.js and Go locally. SeaweedFS orchestration is pending.

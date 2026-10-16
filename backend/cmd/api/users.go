@@ -2,13 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"net/http"
 	"os"
 	"regexp"
 	"time"
 
+	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -23,32 +22,28 @@ var userIDPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-
 
 // registerUserRoutes exposes local development profile inspection. Authentication
 // and community authorization must be added before this becomes a product API.
-func registerUserRoutes(mux *http.ServeMux, lookup func(context.Context, string) (userInfo, error)) {
-	mux.HandleFunc("GET /api/users/{id}", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "no-store")
-		fail := func(code int, message string) {
-			w.WriteHeader(code)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
+func registerUserRoutes(app *fiber.App, lookup func(context.Context, string) (userInfo, error)) {
+	app.Get("/api/users/:id", func(c fiber.Ctx) error {
+		c.Set("Cache-Control", "no-store")
+		fail := func(code int, message string) error {
+			return c.Status(code).JSON(fiber.Map{"error": message}, fiber.MIMEApplicationJSON)
 		}
-		id := r.PathValue("id")
+		id := c.Params("id")
 		if !userIDPattern.MatchString(id) {
-			fail(http.StatusBadRequest, "invalid user ID")
-			return
+			return fail(fiber.StatusBadRequest, "invalid user ID")
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+		ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
 		defer cancel()
 		user, err := lookup(ctx, id)
 		if errors.Is(err, pgx.ErrNoRows) {
-			fail(http.StatusNotFound, "user not found")
-			return
+			return fail(fiber.StatusNotFound, "user not found")
 		}
 		if err != nil {
-			fail(http.StatusServiceUnavailable, "user lookup unavailable")
-			return
+			return fail(fiber.StatusServiceUnavailable, "user lookup unavailable")
 		}
-		_ = json.NewEncoder(w).Encode(user)
+		return c.JSON(user, fiber.MIMEApplicationJSON)
 	})
+	app.All("/api/users/:id", methodNotAllowed)
 }
 
 func findUser(ctx context.Context, id string) (userInfo, error) {

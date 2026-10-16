@@ -16,13 +16,14 @@ Build Ngadu, a web app that helps a community of friends organize badminton sess
 | Frontend | Next.js, React, TypeScript | Pages, navigation, rendering, browser interaction |
 | Frontend tooling and runtime | Bun | Dependencies and running the Next.js server |
 | Backend language | Go | Separate API service and authoritative application rules |
+| HTTP framework | Fiber v3 | Routing, HTTP handlers, and server lifecycle |
 | Authentication | Firebase Authentication | Google login and user identity |
 | Application database | PostgreSQL | Profiles, memberships, sessions, matches |
 | Schema migrations | Goose as a Go library | Versioned SQL migrations under backend/migrations |
 | Development file storage | SeaweedFS | Uploaded files when uploads are included |
 | Local infrastructure | Docker and Docker Compose | Local PostgreSQL; Next.js and Go run on the host for development |
 
-The backend will be a separate Go service. Its HTTP framework, API database library, and production build/deployment configuration remain undecided. Production hosting and storage remain undecided.
+The backend will be a separate Go service. Fiber v3 is the selected HTTP framework. The API database library and production build/deployment configuration remain undecided. Production hosting and storage remain undecided.
 
 Firebase manages login identities. PostgreSQL stores application data linked to the verified Firebase UID. Firebase Authentication does not require Firestore. The Go backend must securely verify Firebase ID tokens.
 
@@ -183,7 +184,7 @@ This is a conceptual model, not a final schema. Invitation acceptance, capacity 
 
 Next.js handles rendering and browser interaction. The separate backend owns authoritative application rules, token verification, permissions, PostgreSQL operations, and authorized uploads. Browsers do not access PostgreSQL directly.
 
-REST with JSON is proposed, not selected. API schemas, session transport, and whether to use a same-origin proxy or a separate API origin remain open. Backend language is Go; the HTTP framework and remaining API tooling stay undecided.
+REST with JSON is proposed, not selected. API schemas, session transport, and whether to use a same-origin proxy or a separate API origin remain open. Backend language is Go; Fiber v3 is the selected HTTP framework; remaining API tooling stays undecided.
 
 ## 12. Optional uploads and access protection
 
@@ -225,7 +226,7 @@ These scenarios validate the proposed baseline once its scope is accepted:
 
 | Decision | Open question |
 | --- | --- |
-| Backend tooling | HTTP framework, API database library, production build/deployment configuration |
+| Backend tooling | API database library, production build/deployment configuration |
 | Membership | Invite-only, organizer approval, or another policy |
 | Invitations | Shared/personal links, expiration and usage defaults |
 | Community scope | One or multiple communities |

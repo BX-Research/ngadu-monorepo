@@ -2,39 +2,46 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/BX-Research/ngadu-monorepo/backend/internal/devdb"
+	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5"
 )
 
-func newHandler(ping func(context.Context) error) http.Handler {
-	mux := http.NewServeMux()
-	respond := func(w http.ResponseWriter, code int, status string) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(code)
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": status})
-	}
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		respond(w, http.StatusOK, "ok")
+func newHandler(ping func(context.Context) error) *fiber.App {
+	app := fiber.New(fiber.Config{
+		CaseSensitive: true,
+		ReadTimeout:   5 * time.Second, IdleTimeout: 60 * time.Second,
 	})
-	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
-		if err := ping(r.Context()); err != nil {
-			respond(w, http.StatusServiceUnavailable, "unavailable")
-			return
+
+	app.Get("/healthz", func(c fiber.Ctx) error {
+		return c.JSON(fiber.Map{"status": "ok"}, fiber.MIMEApplicationJSON)
+	})
+
+	app.Get("/readyz", func(c fiber.Ctx) error {
+		if err := ping(c.Context()); err != nil {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"status": "unavailable"}, fiber.MIMEApplicationJSON)
 		}
-		respond(w, http.StatusOK, "ready")
+		return c.JSON(fiber.Map{"status": "ready"}, fiber.MIMEApplicationJSON)
 	})
-	registerUserRoutes(mux, findUser)
-	return mux
+	registerUserRoutes(app, findUser)
+	app.All("/healthz", methodNotAllowed)
+	app.All("/readyz", methodNotAllowed)
+	app.Use(func(c fiber.Ctx) error {
+		return c.Status(fiber.StatusNotFound).SendString("404 page not found\n")
+	})
+	return app
+}
+
+func methodNotAllowed(c fiber.Ctx) error {
+	c.Set("Allow", "GET, HEAD")
+	return c.Status(fiber.StatusMethodNotAllowed).SendString("Method Not Allowed\n")
 }
 
 func pingDatabase(ctx context.Context) error {
@@ -48,25 +55,12 @@ func pingDatabase(ctx context.Context) error {
 	return conn.Ping(ctx)
 }
 
-func serve(ctx context.Context, listener net.Listener, handler http.Handler) error {
-	server := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
-	done := make(chan error, 1)
-	go func() { done <- server.Serve(listener) }()
-	select {
-	case err := <-done:
-		if errors.Is(err, http.ErrServerClosed) {
-			return nil
-		}
-		return err
-	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			_ = server.Close()
-			return err
-		}
-		return nil
-	}
+func serve(ctx context.Context, listener net.Listener, app *fiber.App) error {
+	return app.Listener(listener, fiber.ListenConfig{
+		DisableStartupMessage: true,
+		GracefulContext:       ctx,
+		ShutdownTimeout:       5 * time.Second,
+	})
 }
 
 func main() {
