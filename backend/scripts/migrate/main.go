@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/BX-Research/ngadu-monorepo/backend/internal/devdb"
+	"github.com/BX-Research/ngadu-monorepo/backend/app/database/devdb"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 )

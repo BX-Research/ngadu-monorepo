@@ -48,7 +48,7 @@ dev-frontend:
 	$(BUN) run dev
 
 dev-backend:
-	$(GO) -C backend run ./cmd/api
+	$(GO) -C backend run ./app
 
 db-up:
 	$(DOCKER) compose up -d --wait --wait-timeout 60 db
