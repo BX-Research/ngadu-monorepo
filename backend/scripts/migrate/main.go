@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/BX-Research/ngadu-monorepo/backend/app/database/devdb"
+	"github.com/BX-Research/ngadu-monorepo/backend/app/database"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 )
@@ -17,7 +17,7 @@ func run(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("usage: migrate up|status|create NAME")
 	}
-	root, err := devdb.Root()
+	root, err := database.Root()
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func run(args []string) error {
 	if len(args) != 1 || (args[0] != "up" && args[0] != "status") {
 		return fmt.Errorf("supported commands: up, status, create NAME")
 	}
-	connectionURL, err := devdb.URL()
+	connectionURL, err := database.LocalURL()
 	if err != nil {
 		return err
 	}

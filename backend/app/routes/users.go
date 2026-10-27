@@ -32,7 +32,7 @@ import (
 // 	app.All("/api/users/:id", methodNotAllowed)
 // }
 
-func UserRoutes(app fiber.Router) {
+func UserRoutes(app fiber.Router, users services.UserFinder) {
 	userLimiter := limiter.New(
 		limiter.Config{
 			Max:        10,
@@ -43,5 +43,5 @@ func UserRoutes(app fiber.Router) {
 
 	r.Use(userLimiter)
 
-	r.Get("/:id", services.FindUser)
+	r.Get("/:id", services.FindUser(users))
 }

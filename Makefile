@@ -51,7 +51,8 @@ dev-frontend:
 	$(BUN) run dev
 
 dev-backend:
-	cd backend && $(AIR) -c .air.toml
+	@set -e; local_db_url="$$( $(GO) -C backend run ./scripts/dburl )"; \
+	cd backend && DATABASE_URL="$$local_db_url" $(AIR) -c .air.toml
 
 db-up:
 	$(DOCKER) compose up -d --wait --wait-timeout 60 db

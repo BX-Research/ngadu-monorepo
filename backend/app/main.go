@@ -6,28 +6,22 @@ import (
 	"os"
 	"time"
 
-	"github.com/BX-Research/ngadu-monorepo/backend/app/database/devdb"
+	"github.com/BX-Research/ngadu-monorepo/backend/app/dal"
+	"github.com/BX-Research/ngadu-monorepo/backend/app/database"
 	"github.com/BX-Research/ngadu-monorepo/backend/app/routes"
 	"github.com/gofiber/fiber/v3"
-	"github.com/jackc/pgx/v5"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file:", err)
-	}
-	// dependency injection
-	DATABASE_URL, err := devdb.URL()
+	databaseURL, err := database.URL()
 	if err != nil {
 		log.Fatal(err)
 	}
-	conn, err := pgx.Connect(context.Background(), DATABASE_URL)
+	conn, err := database.Open(context.Background(), databaseURL)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close(context.Background())
+	defer conn.Close()
 
 	app := fiber.New(fiber.Config{
 		CaseSensitive: true,
@@ -42,6 +36,6 @@ func main() {
 	if PORT == "" {
 		PORT = "8080"
 	}
-	routes.UserRoutes(app)
+	routes.UserRoutes(app, dal.NewUsers(conn))
 	app.Listen("127.0.0.1:" + PORT)
 }

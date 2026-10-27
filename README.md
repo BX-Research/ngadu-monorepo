@@ -16,9 +16,21 @@ ngadu-monorepo/
 
 Services share one Git repository and keep independent toolchains. The frontend manifest and lockfile remain in `frontend`. No extra monorepo build system is required initially.
 
-## Common commands
+## Prerequisites
 
-Install GNU Make, Bun (the version in `package.json`), Go (compatible with `backend/go.mod`), and Docker with Compose on your machine. Start the Docker daemon. Install [Air](https://github.com/air-verse/air) for Go live reload and ensure its installation directory is on your `PATH`:
+Install these tools before running the project:
+
+```text
+Git                    Version control and shared Git hooks
+GNU Make               Local development commands
+Bun 1.4.3              Frontend runtime and package manager (package.json)
+Go 1.26.0 or compatible Backend toolchain (backend/go.mod)
+Docker Engine/Desktop  Local PostgreSQL container; daemon must be running
+Docker Compose v2      Docker Compose plugin (docker compose)
+Air                    Go backend live reload
+```
+
+Install [Air](https://github.com/air-verse/air) and ensure its installation directory is on your `PATH`:
 
 ```bash
 go install github.com/air-verse/air@latest
@@ -28,6 +40,8 @@ air -v
 ```
 
 If you set `GOBIN`, add that directory to `PATH` instead. The Makefile does not install these prerequisite tools.
+
+## Common commands
 
 From the repository root:
 
@@ -46,11 +60,11 @@ make help        # List the available commands
 
 Ctrl+C stops both app processes. PostgreSQL stays running; `make db-stop` stops it without deleting its named data volume. `make db-up` starts it again and `make db-logs` shows its logs. The recipe waits for both apps; if one exits, stop the remaining app with Ctrl+C.
 
-Optional local overrides are in [.env.example](.env.example); copy it to `.env`, or set the listed variables in your shell. Next.js uses its default port 3000; the Go backend listens on localhost:8080 and PostgreSQL on localhost:5432. There are no custom port settings. The checked-in database password is a local development placeholder. Set a local password before first use. Changing database credentials after the volume is initialized requires updating the database role too; it does not reset existing data.
+Required database settings are in [.env.example](.env.example); copy it to root `.env`, or set the listed variables in your shell. Database settings have no defaults. Next.js uses its default port 3000; the Go backend listens on localhost:8080 and PostgreSQL on localhost:5432. There are no custom port settings. The checked-in database password is a local development placeholder. Set a local password before first use. Changing database credentials after the volume is initialized requires updating the database role too; it does not reset existing data.
 
 `make seed` starts the same Docker database and writes the development fixtures described in the [seeder guide](backend/scripts/README.md). Migrations run Go directly, load root `.env`, and construct a local database URL from `DEV_DB_*`. Seeding executes `backend/seeds/dev.sql` using `psql` inside the Compose database container. Both ignore ambient `DATABASE_URL` and host PostgreSQL connection variables. All Make service/database commands target local development. Goose is pinned in `backend/go.mod`, so no separate Goose installation is needed. `make db-seed` aliases `make seed`, which applies migrations before inserting fixtures. Go database tests require `TEST_DATABASE_URL`; otherwise they are skipped. Existing Bun commands remain available. Use `make install-frontend` or `make install-backend` to install dependencies for one service.
 
-Use `make dev-frontend` to start only Next.js. `make dev-backend` runs only the Go app through Air using `backend/.air.toml`, which builds `./app`. You can also run `air` directly from `backend`. Override the executable with `make dev-backend AIR=/path/to/air` if needed. Start PostgreSQL separately with `make db-up` (or `make db-seed` to migrate and seed it).
+Use `make dev-frontend` to start only Next.js. `make dev-backend` runs only the Go app through Air using `backend/.air.toml`, which builds `./app`. You can also run `air` directly from `backend` with an explicit `DATABASE_URL` in root `.env` or your shell. `make dev` and `make dev-backend` override `DATABASE_URL` for the backend process with a local URL built from required `DEV_DB_*` settings; they never rewrite `.env`. Override the executable with `make dev-backend AIR=/path/to/air` if needed. Start PostgreSQL separately with `make db-up` (or `make db-seed` to migrate and seed it).
 
 ## Frontend development
 
