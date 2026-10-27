@@ -2,7 +2,7 @@
 
 A minimal Go server uses Fiber v3 for `GET /healthz` (liveness) and `GET /readyz` (PostgreSQL connectivity). A local development user lookup is available; Firebase token verification and protected product APIs are not implemented yet. The readiness check uses `pgx`; Fiber is the selected HTTP framework; the full API database-access design remains undecided.
 
-Run `make dev` from the repository root to start local Docker PostgreSQL, this backend, and the frontend. The server listens on localhost port 8080. Root `.env` settings are described in [.env.example](../.env.example). Standalone startup uses `go run ./cmd/api` from this directory. It loads root `.env` and shell development database credentials, ignores ambient `DATABASE_URL`, and binds to localhost:8080. PostgreSQL uses localhost:5432.
+Run `make dev` from the repository root to start local Docker PostgreSQL, this backend, and the frontend. The server listens on localhost port 8080. Root `.env` settings are described in [.env.example](../.env.example). Install Air as described in the [root README](../README.md#common-commands). Standalone startup uses `air` from this directory; `.air.toml` builds `./app` and reloads the server after Go edits. For startup without live reload, use `go run ./app`. It loads root `.env` and shell development database credentials, ignores ambient `DATABASE_URL`, and binds to localhost:8080. PostgreSQL uses localhost:5432.
 
 Run `make test-backend` and `make vet-backend` from the root to check Go code.
 

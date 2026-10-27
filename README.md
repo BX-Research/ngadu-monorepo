@@ -18,7 +18,16 @@ Services share one Git repository and keep independent toolchains. The frontend 
 
 ## Common commands
 
-Install GNU Make, Bun (the version in `package.json`), Go (compatible with `backend/go.mod`), and Docker with Compose on your machine. Start the Docker daemon. The Makefile does not install these tools.
+Install GNU Make, Bun (the version in `package.json`), Go (compatible with `backend/go.mod`), and Docker with Compose on your machine. Start the Docker daemon. Install [Air](https://github.com/air-verse/air) for Go live reload and ensure its installation directory is on your `PATH`:
+
+```bash
+go install github.com/air-verse/air@latest
+# For the default Go installation directory on Linux/macOS/WSL:
+export PATH="$(go env GOPATH)/bin:$PATH"
+air -v
+```
+
+If you set `GOBIN`, add that directory to `PATH` instead. The Makefile does not install these prerequisite tools.
 
 From the repository root:
 
@@ -33,7 +42,7 @@ make check       # Frontend lint/types/build, Go tests/vet
 make help        # List the available commands
 ```
 
-`make dev` starts PostgreSQL and waits for its health check, applies migrations, seeds development fixtures, then runs `make dev-backend` and `make dev-frontend` concurrently. Open <http://127.0.0.1:3000>; backend liveness is at <http://127.0.0.1:8080/healthz> and database readiness at <http://127.0.0.1:8080/readyz>. The backend also provides a local development `GET /api/users/{id}` lookup; see [the backend guide](backend/README.md). Protected product APIs and frontend API integration remain pending. Restart `make dev` after changing Go code; Next.js reloads frontend edits automatically.
+`make dev` starts PostgreSQL and waits for its health check, applies migrations, seeds development fixtures, then runs `make dev-backend` and `make dev-frontend` concurrently. Open <http://127.0.0.1:3000>; backend liveness is at <http://127.0.0.1:8080/healthz> and database readiness at <http://127.0.0.1:8080/readyz>. The backend also provides a local development `GET /api/users/{id}` lookup; see [the backend guide](backend/README.md). Protected product APIs and frontend API integration remain pending. Air rebuilds and restarts the backend after Go edits; Next.js reloads frontend edits automatically.
 
 Ctrl+C stops both app processes. PostgreSQL stays running; `make db-stop` stops it without deleting its named data volume. `make db-up` starts it again and `make db-logs` shows its logs. The recipe waits for both apps; if one exits, stop the remaining app with Ctrl+C.
 
@@ -41,7 +50,7 @@ Optional local overrides are in [.env.example](.env.example); copy it to `.env`,
 
 `make seed` starts the same Docker database and writes the development fixtures described in the [seeder guide](backend/scripts/README.md). Migrations run Go directly, load root `.env`, and construct a local database URL from `DEV_DB_*`. Seeding executes `backend/seeds/dev.sql` using `psql` inside the Compose database container. Both ignore ambient `DATABASE_URL` and host PostgreSQL connection variables. All Make service/database commands target local development. Goose is pinned in `backend/go.mod`, so no separate Goose installation is needed. `make db-seed` aliases `make seed`, which applies migrations before inserting fixtures. Go database tests require `TEST_DATABASE_URL`; otherwise they are skipped. Existing Bun commands remain available. Use `make install-frontend` or `make install-backend` to install dependencies for one service.
 
-Use `make dev-frontend` to start only Next.js. `make dev-backend` runs only the Go app (`go run ./cmd/api`) with local development settings. Start PostgreSQL separately with `make db-up` (or `make db-seed` to migrate and seed it).
+Use `make dev-frontend` to start only Next.js. `make dev-backend` runs only the Go app through Air using `backend/.air.toml`, which builds `./app`. You can also run `air` directly from `backend`. Override the executable with `make dev-backend AIR=/path/to/air` if needed. Start PostgreSQL separately with `make db-up` (or `make db-seed` to migrate and seed it).
 
 ## Frontend development
 

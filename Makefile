@@ -2,6 +2,7 @@
 
 BUN ?= bun
 GO ?= go
+AIR ?= air
 DOCKER ?= docker
 
 .PHONY: help install install-frontend install-backend hooks dev dev-frontend dev-backend db-up db-stop db-down db-logs db-migrate db-status db-revision db-seed seed lint typecheck build start test-backend vet-backend check
@@ -10,7 +11,9 @@ help:
 	@printf '%s\n' \
 	  'Local development commands (no production database targets)' \
 	  'make install          Download frontend/Go dependencies and enable Git hooks' \
-	  'make dev              Start Docker PostgreSQL, Go backend, and frontend' \
+	  'make dev              Start Docker PostgreSQL, Go backend with Air, and frontend' \
+	  'make dev-backend      Run the Go backend with Air live reload' \
+	  'make dev-frontend     Run Next.js development server' \
 	  'make seed / db-seed   Start, migrate, and seed local PostgreSQL' \
 	  'make db-migrate       Apply local database migrations using the Go Goose library' \
 	  'make db-status        Show local migration status' \
@@ -48,7 +51,7 @@ dev-frontend:
 	$(BUN) run dev
 
 dev-backend:
-	$(GO) -C backend run ./app
+	cd backend && $(AIR) -c .air.toml
 
 db-up:
 	$(DOCKER) compose up -d --wait --wait-timeout 60 db
