@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -35,7 +34,7 @@ func testDB(t *testing.T) *pgx.Conn {
 	if _, err := conn.Exec(ctx, "SET search_path TO "+schema); err != nil {
 		t.Fatal(err)
 	}
-	migration, err := os.ReadFile("../../migrations/20261013000000_initial_schema.sql")
+	migration, err := os.ReadFile("../migrations/20261013000000_initial_schema.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,8 +48,8 @@ func testDB(t *testing.T) *pgx.Conn {
 func TestSeedRerunPreservesProfilesAndSyncsRoles(t *testing.T) {
 	conn := testDB(t)
 	ctx := context.Background()
-	var output bytes.Buffer
-	if err := seed(ctx, conn, &output); err != nil {
+
+	if err := seedSQL(ctx, conn); err != nil {
 		t.Fatal(err)
 	}
 	// Existing Firebase users can have IDs assigned outside the seed script.
@@ -63,7 +62,7 @@ func TestSeedRerunPreservesProfilesAndSyncsRoles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := seed(ctx, conn, &output); err != nil {
+	if err := seedSQL(ctx, conn); err != nil {
 		t.Fatal(err)
 	}
 	var users, communities, memberships int
@@ -92,15 +91,27 @@ func TestSeedRollsBackOnConflict(t *testing.T) {
 		VALUES ('00000000-0000-4000-8000-000000000003', 'unrelated-user', 'Existing User')`); err != nil {
 		t.Fatal(err)
 	}
-	var output bytes.Buffer
-	if err := seed(ctx, conn, &output); err == nil {
+
+	if err := seedSQL(ctx, conn); err == nil {
 		t.Fatal("expected a conflicting ID to fail the seed")
 	}
 	var count int
 	if err := conn.QueryRow(ctx, "SELECT count(*) FROM users").Scan(&count); err != nil {
 		t.Fatal(err)
 	}
-	if count != 1 || output.Len() != 0 {
-		t.Fatalf("failed seed left partial data or success output: users=%d, output=%q", count, output.String())
+	if count != 1 {
+		t.Fatalf("failed seed left partial data: users=%d", count)
 	}
+}
+
+func seedSQL(ctx context.Context, conn *pgx.Conn) error {
+	data, err := os.ReadFile("dev.sql")
+	if err != nil {
+		return err
+	}
+	_, err = conn.Exec(ctx, string(data))
+	if err != nil {
+		conn.Exec(ctx, "ROLLBACK")
+	}
+	return err
 }

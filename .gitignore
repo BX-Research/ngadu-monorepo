@@ -24,3 +24,6 @@ seaweedfs-data/
 Thumbs.db
 .vercel/
 *.log
+
+# Air development build output
+/backend/**/tmp/

@@ -2,6 +2,7 @@
 
 BUN ?= bun
 GO ?= go
+AIR ?= air
 DOCKER ?= docker
 
 .PHONY: help install install-frontend install-backend hooks dev dev-frontend dev-backend db-up db-stop db-down db-logs db-migrate db-status db-revision db-seed seed lint typecheck build start test-backend vet-backend check
@@ -10,7 +11,9 @@ help:
 	@printf '%s\n' \
 	  'Local development commands (no production database targets)' \
 	  'make install          Download frontend/Go dependencies and enable Git hooks' \
-	  'make dev              Start Docker PostgreSQL, Go backend, and frontend' \
+	  'make dev              Start Docker PostgreSQL, Go backend with Air, and frontend' \
+	  'make dev-backend      Run the Go backend with Air live reload' \
+	  'make dev-frontend     Run Next.js development server' \
 	  'make seed / db-seed   Start, migrate, and seed local PostgreSQL' \
 	  'make db-migrate       Apply local database migrations using the Go Goose library' \
 	  'make db-status        Show local migration status' \
@@ -38,7 +41,12 @@ install-backend:
 hooks:
 	$(BUN) run setup:hooks
 
-dev: db-seed
+# Bootstrap once; never refresh an existing environment file from the example.
+.env:
+	cp .env.example .env
+
+dev: .env
+	$(MAKE) db-seed
 	@trap 'trap - EXIT INT TERM; if jobs -p | read pid; then kill 0; fi' EXIT INT TERM; \
 	$(MAKE) dev-backend & \
 	$(MAKE) dev-frontend & \
@@ -48,7 +56,8 @@ dev-frontend:
 	$(BUN) run dev
 
 dev-backend:
-	$(GO) -C backend run ./cmd/api
+	@set -e; local_db_url="$$( $(GO) -C backend run ./scripts/dburl )"; \
+	cd backend && DATABASE_URL="$$local_db_url" $(AIR) -c .air.toml
 
 db-up:
 	$(DOCKER) compose up -d --wait --wait-timeout 60 db
@@ -76,7 +85,7 @@ db-revision:
 db-seed: seed
 
 seed: db-migrate
-	$(GO) -C backend run ./scripts/seed
+	$(DOCKER) compose exec -T db sh -c 'exec psql -X --set=ON_ERROR_STOP=1 --username="$$POSTGRES_USER" --dbname="$$POSTGRES_DB"' < backend/seeds/dev.sql
 
 lint:
 	$(BUN) run lint
