@@ -56,7 +56,7 @@ make check       # Frontend lint/types/build, Go tests/vet
 make help        # List the available commands
 ```
 
-`make dev` starts PostgreSQL and waits for its health check, applies migrations, seeds development fixtures, then runs `make dev-backend` and `make dev-frontend` concurrently. Open <http://127.0.0.1:3000>; backend liveness is at <http://127.0.0.1:8080/healthz> and database readiness at <http://127.0.0.1:8080/readyz>. The backend also provides a local development `GET /api/users/{id}` lookup; see [the backend guide](backend/README.md). Protected product APIs and frontend API integration remain pending. Air rebuilds and restarts the backend after Go edits; Next.js reloads frontend edits automatically.
+`make dev` first copies `.env.example` to `.env` if `.env` is missing, preserving any existing `.env`. It then starts PostgreSQL and waits for its health check, applies migrations, seeds development fixtures, then runs `make dev-backend` and `make dev-frontend` concurrently. Open <http://127.0.0.1:3000>; backend liveness is at <http://127.0.0.1:8080/healthz> and database readiness at <http://127.0.0.1:8080/readyz>. The backend also provides a local development `GET /api/users/{id}` lookup; see [the backend guide](backend/README.md). Protected product APIs and frontend API integration remain pending. Air rebuilds and restarts the backend after Go edits; Next.js reloads frontend edits automatically.
 
 Ctrl+C stops both app processes. PostgreSQL stays running; `make db-stop` stops it without deleting its named data volume. `make db-up` starts it again and `make db-logs` shows its logs. The recipe waits for both apps; if one exits, stop the remaining app with Ctrl+C.
 

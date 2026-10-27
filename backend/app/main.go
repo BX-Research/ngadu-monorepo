@@ -37,5 +37,5 @@ func main() {
 		PORT = "8080"
 	}
 	routes.UserRoutes(app, dal.NewUsers(conn))
-	app.Listen("127.0.0.1:" + PORT)
+	log.Fatal(app.Listen(":" + PORT))
 }

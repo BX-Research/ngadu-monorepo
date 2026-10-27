@@ -41,7 +41,12 @@ install-backend:
 hooks:
 	$(BUN) run setup:hooks
 
-dev: db-seed
+# Bootstrap once; never refresh an existing environment file from the example.
+.env:
+	cp .env.example .env
+
+dev: .env
+	$(MAKE) db-seed
 	@trap 'trap - EXIT INT TERM; if jobs -p | read pid; then kill 0; fi' EXIT INT TERM; \
 	$(MAKE) dev-backend & \
 	$(MAKE) dev-frontend & \
