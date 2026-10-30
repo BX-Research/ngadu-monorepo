@@ -10,7 +10,6 @@ import (
 
 	"github.com/BX-Research/ngadu-monorepo/backend/app/types"
 	"github.com/gofiber/fiber/v3"
-	"github.com/jackc/pgx/v5"
 )
 
 type ladderStub struct {
@@ -18,12 +17,12 @@ type ladderStub struct {
 	calls int
 }
 
-func (s *ladderStub) Leaderboard(ctx context.Context, id string) (types.Leaderboard, error) {
+func (s *ladderStub) Leaderboard(ctx context.Context) (types.Leaderboard, error) {
 	s.calls++
 	if _, ok := ctx.Deadline(); !ok {
 		return types.Leaderboard{}, errors.New("missing deadline")
 	}
-	return types.Leaderboard{Community: types.Community{ID: id, Name: "Test Club"}, TotalPlayers: 1,
+	return types.Leaderboard{TotalPlayers: 1,
 		Players: []types.RankedPlayer{{Rank: 1, UserID: "player", DisplayName: "Test Player", Rating: 1500, PhotoKey: "profiles/sage.svg"}}}, s.err
 }
 
@@ -35,20 +34,18 @@ func (s photoStub) PhotoURL(context.Context, string) (string, error) {
 
 func TestLeaderboardHandler(t *testing.T) {
 	for _, tc := range []struct {
-		name, id string
-		err      error
-		status   int
+		name   string
+		err    error
+		status int
 	}{
-		{"found", "00000000-0000-4000-8000-000000000101", nil, 200},
-		{"invalid", "invalid", nil, 400},
-		{"missing", "00000000-0000-4000-8000-000000000101", pgx.ErrNoRows, 404},
-		{"unavailable", "00000000-0000-4000-8000-000000000101", errors.New("secret database details"), 503},
+		{"found", nil, 200},
+		{"unavailable", errors.New("secret database details"), 503},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			db := &ladderStub{err: tc.err}
 			app := fiber.New()
-			app.Get("/api/communities/:communityId/leaderboard", GetLeaderboard(db, photoStub{}))
-			res, err := app.Test(httptest.NewRequest("GET", "/api/communities/"+tc.id+"/leaderboard", nil))
+			app.Get("/api/leaderboard", GetLeaderboard(db, photoStub{}))
+			res, err := app.Test(httptest.NewRequest("GET", "/api/leaderboard", nil))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -64,11 +61,8 @@ func TestLeaderboardHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 			data, _ := json.Marshal(body)
-			if strings.Contains(string(data), "secret") || strings.Contains(string(data), "photo_key") {
+			if strings.Contains(string(data), "secret") || strings.Contains(string(data), "photo_key") || strings.Contains(string(data), `"community"`) {
 				t.Fatal("private details leaked")
-			}
-			if tc.status == 400 && db.calls != 0 {
-				t.Fatal("invalid ID queried database")
 			}
 			if tc.status == 200 {
 				players := body["players"].([]any)
@@ -81,8 +75,8 @@ func TestLeaderboardHandler(t *testing.T) {
 }
 func TestLeaderboardPhotoFailureDoesNotHideStandings(t *testing.T) {
 	app := fiber.New()
-	app.Get("/:communityId", GetLeaderboard(&ladderStub{}, photoStub{errors.New("storage unavailable")}))
-	res, err := app.Test(httptest.NewRequest("GET", "/00000000-0000-4000-8000-000000000101", nil))
+	app.Get("/api/leaderboard", GetLeaderboard(&ladderStub{}, photoStub{errors.New("storage unavailable")}))
+	res, err := app.Test(httptest.NewRequest("GET", "/api/leaderboard", nil))
 	if err != nil {
 		t.Fatal(err)
 	}

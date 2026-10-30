@@ -57,11 +57,11 @@ dev: .env
 	wait
 
 dev-frontend:
-	ENABLE_DEV_LEADERBOARD=true $(BUN) run dev --hostname 127.0.0.1 --port $(FRONTEND_PORT)
+	$(BUN) run dev --hostname 127.0.0.1 --port $(FRONTEND_PORT)
 
 dev-backend:
 	@set -e; local_db_url="$$( $(GO) -C backend run ./scripts/dburl )"; \
-	cd backend && ENABLE_DEV_LEADERBOARD=true DATABASE_URL="$$local_db_url" $(AIR) -c .air.toml
+	cd backend && DATABASE_URL="$$local_db_url" $(AIR) -c .air.toml
 
 db-up:
 	$(DOCKER) compose up -d --wait --wait-timeout 60 db

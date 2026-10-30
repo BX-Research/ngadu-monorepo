@@ -9,7 +9,7 @@ Run `make test-backend` and `make vet-backend` from the root to check Go code.
 SQL fixtures in `seeds/dev.sql` populate PostgreSQL through Docker’s `psql`; see [scripts/README.md](scripts/README.md) for setup,
 usage, and checks. The seed does not implement login.
 
-Expected responsibilities include verifying Firebase ID tokens, enforcing community permissions, managing sessions and pairings, querying PostgreSQL, and handling uploads through SeaweedFS if uploads are selected.
+Expected responsibilities include verifying Firebase ID tokens, enforcing application permissions, managing sessions and pairings, querying PostgreSQL, and handling uploads through SeaweedFS if uploads are selected.
 
 See [the functional specification](../docs/functional-spec.md) and [repository instructions](../AGENTS.md).
 
@@ -17,7 +17,7 @@ See [the functional specification](../docs/functional-spec.md) and [repository i
 
 `GET /api/users/{id}` looks up the application UUID in PostgreSQL using a
 parameterized query and returns `id`, `firebase_uid`, `display_name`, and
-`created_at` (an RFC 3339 timestamp). No membership information is included.
+`created_at` (an RFC 3339 timestamp). No authorization information is included.
 
 ```bash
 make db-seed
@@ -30,21 +30,19 @@ Responses are JSON: 200 for a user, 400 for an invalid UUID, 404 when no user
 matches, and 503 when the database lookup fails. Errors use an `error` field
 without connection details. Requests have a three-second database timeout.
 This endpoint is for local inspection; it has no Firebase authentication or
-community authorization and must gain those checks before product use.
+application authorization and must gain those checks before product use.
 
 ## Leaderboard (local development)
 
-`make dev-backend` explicitly enables the fictional leaderboard using
-`ENABLE_DEV_LEADERBOARD=true`. Direct Go startup requires that flag to opt in;
-without it the route is absent (404). The backend binds to loopback. Production
-use requires Firebase ID token verification and community membership checks.
+The fictional leaderboard is available by default, including direct Go startup.
+The backend binds to loopback. Production
+use requires an explicit authentication and application-permission policy.
 
-`GET /api/communities/{communityId}/leaderboard` returns:
+`GET /api/leaderboard` returns:
 
 ```json
 {
-  "community": { "id": "00000000-0000-4000-8000-000000000101", "name": "Demo Shuttle Club" },
-  "total_players": 23,
+  "total_players": 24,
   "players": [
     { "rank": 1, "user_id": "00000000-0000-4000-8000-000000000201", "display_name": "Adi Demo", "rating": 1750, "wins": 30, "losses": 5, "photo_url": null }
   ]
@@ -60,14 +58,13 @@ null URLs without failing the leaderboard.
 Ranks are sequential, ordered by rating descending then user UUID ascending.
 Count and list use a single database statement. Each request queries stored
 rating snapshots with a three-second timeout and `Cache-Control: no-store`.
-Malformed UUIDs return 400, unknown communities 404, empty communities 200 with
-an empty array, and database failure 503 without internal error details.
+Empty standings return 200 with an empty array; database failure returns 503
+without internal error details. Each player has one global rating record.
 The dashboard and browser-local demo matches do not update these ratings.
 
 The Next.js endpoint `/api/leaderboard` forwards only this fixed operation to a
 loopback backend, using server-only `NGADU_BACKEND_ORIGIN` (default
-`http://127.0.0.1:8080`) and `DEV_LEADERBOARD_COMMUNITY_ID` (default main fixture
-club). It also requires `ENABLE_DEV_LEADERBOARD=true`. Set optional overrides in
+`http://127.0.0.1:8080`). Set optional overrides in
 the shell running Next.js, or in its local environment file; root `.env` loading
 is owned by the Go utilities/Compose. Never use `NEXT_PUBLIC_` for credentials.
 

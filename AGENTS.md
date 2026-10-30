@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-This monorepo contains Ngadu, a badminton matchmaking app for a community of friends. Read `docs/functional-spec.md` before changing product behavior. Distinguish confirmed decisions from proposed features and open choices.
+This monorepo contains Ngadu, a badminton matchmaking app for friends. Read `docs/functional-spec.md` before changing product behavior. Distinguish confirmed decisions from proposed features and open choices.
 
 ## Layout
 
@@ -12,7 +12,7 @@ This monorepo contains Ngadu, a badminton matchmaking app for a community of fri
 
 ## Confirmed architecture
 
-Next.js runs on Bun. A separate Go backend using Fiber v3 will verify Firebase Authentication ID tokens, enforce community permissions, query PostgreSQL, and handle SeaweedFS uploads if uploads are included. Firebase provides Google login; it does not require Firestore. SeaweedFS is selected for development. Docker Compose runs local PostgreSQL; `make dev` starts the database container and runs Next.js and Go locally. SeaweedFS orchestration is pending. Production hosting and storage remain undecided.
+Next.js runs on Bun. A separate Go backend using Fiber v3 will verify Firebase Authentication ID tokens, enforce application permissions, query PostgreSQL, and handle SeaweedFS uploads if uploads are included. Firebase provides Google login; it does not require Firestore. SeaweedFS is selected for development. Docker Compose runs local PostgreSQL; `make dev` starts the database container and runs Next.js and Go locally. SeaweedFS orchestration is pending. Production hosting and storage remain undecided.
 
 ## Development commands
 

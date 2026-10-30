@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Ngadu",
-  description: "Badminton matchmaking for your community.",
+  description: "Badminton matchmaking and a global player ladder.",
 };
 
 export const viewport: Viewport = {

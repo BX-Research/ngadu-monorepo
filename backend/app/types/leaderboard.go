@@ -1,10 +1,5 @@
 package types
 
-type Community struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
 type RankedPlayer struct {
 	Rank        int     `json:"rank"`
 	UserID      string  `json:"user_id"`
@@ -17,7 +12,6 @@ type RankedPlayer struct {
 }
 
 type Leaderboard struct {
-	Community    Community      `json:"community"`
 	TotalPlayers int            `json:"total_players"`
 	Players      []RankedPlayer `json:"players"`
 }

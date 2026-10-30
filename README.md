@@ -1,6 +1,6 @@
 # Ngadu
 
-A badminton community matchmaking app. The leaderboard reads fictional development rankings from PostgreSQL through the Go API and profile photos from private local S3 storage. Authentication and matchmaking are still pending; dashboard and match pages use browser demo data.
+A badminton matchmaking app for friends. The leaderboard reads fictional global development rankings from PostgreSQL through the Go API and profile photos from private local S3 storage. Authentication and matchmaking are still pending; dashboard and match pages use browser demo data.
 
 ## Structure
 

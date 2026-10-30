@@ -9,7 +9,6 @@ export type RankedPlayer = {
 };
 
 export type Leaderboard = {
-  community: { id: string; name: string };
   total_players: number;
   players: RankedPlayer[];
 };

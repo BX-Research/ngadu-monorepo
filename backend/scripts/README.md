@@ -1,10 +1,9 @@
 # Development seed
 
 The SQL file [`../seeds/dev.sql`](../seeds/dev.sql) inserts 24 fictional users,
-two communities, 25 memberships, and 25 community rating records into the migrated local development database.
+and 24 global rating records into the migrated local development database.
 Goose is used as a Go library by `migrate/`; no separate Goose executable is
-required. SQL schema migrations live in `backend/migrations/`. The second
-community is a permission-testing fixture and does not decide community scope.
+required. SQL schema migrations live in `backend/migrations/`.
 
 From the repository root:
 
@@ -41,19 +40,17 @@ and storage startup, migrations, and seeding. Its shell trap stops the app proce
 
 The SQL runs in one transaction; `psql` stops immediately on errors. It looks up
 users by Firebase UID, preserves existing display names, and reuses their stored
-application IDs for memberships. Communities use fixed IDs; existing community
-names are preserved. Existing membership roles are updated to match the fixture
-values, while join dates stay unchanged. No other memberships are deleted.
-Reruns do not duplicate fixtures. Conflicting IDs or other constraint violations
-roll back the entire run. Schema changes are managed separately through Goose migrations.
+application IDs for global ratings. Reruns do not duplicate fixtures or overwrite
+edited profiles, photo keys, wins/losses, or ratings. Conflicting IDs or other
+constraint violations roll back the entire seed transaction. Every fresh database
+starts with the same 24 fictional players and 24 global rating records; edited
+local databases may differ. Ties and missing photos are intentional fixtures.
 
-The main club has 23 ranked members; Drew remains a nonmember. The other club
-has two independent ratings. Ties and missing photo references are intentional.
-Profiles and ratings use insert-only conflict handling, so edited names, photo
-keys, wins/losses, and ratings survive reruns. The original five memberships
-retain their existing role-sync behavior; added memberships preserve edited roles.
-Every fresh database starts with the same records; locally edited databases may
-differ. Seeds never reset application data automatically.
+The global-ladder migration intentionally discards the old rating snapshots.
+Run `make seed` (or `make db-seed`) after migrating to load the shared baseline.
+Profiles and photo references are preserved. This one-time reset is forward-only;
+restoring a backup is required to return to the previous schema/data. Subsequent
+seed runs preserve edits rather than resetting ratings again.
 
 ## Profile photo fixtures
 
@@ -90,8 +87,7 @@ The `seed-user-*` and `seed-player-*` Firebase UIDs are placeholders. For authen
 set the user's `firebase_uid` in `backend/seeds/dev.sql` to the UID of a
 Firebase development or Auth emulator user before the first run. If already
 seeded, update the matching local database user's UID as well. Seeding PostgreSQL
-does not create Firebase accounts, passwords, or login tokens. Roles are fixture
-data and must not be granted automatically on login.
+does not create Firebase accounts, passwords, login tokens, or application permissions.
 
 To run the integration tests against a disposable PostgreSQL database:
 

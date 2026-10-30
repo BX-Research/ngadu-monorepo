@@ -14,6 +14,11 @@ import (
 )
 
 func Open(t *testing.T) *pgx.Conn {
+	return OpenBefore(t, "")
+}
+
+// OpenBefore stops before a named migration to exercise upgrades from old schemas.
+func OpenBefore(t *testing.T, stopBefore string) *pgx.Conn {
 	t.Helper()
 	url := os.Getenv("TEST_DATABASE_URL")
 	if url == "" {
@@ -45,6 +50,9 @@ func Open(t *testing.T) *pgx.Conn {
 		t.Fatal(err)
 	}
 	for _, path := range paths {
+		if filepath.Base(path) == stopBefore {
+			break
+		}
 		migration, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)

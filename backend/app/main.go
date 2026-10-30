@@ -44,15 +44,13 @@ func main() {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 	var photos services.PhotoSigner
-	if os.Getenv("ENABLE_DEV_LEADERBOARD") == "true" {
-		config := storage.DevConfig()
-		if err := config.ValidateLocal(); err != nil {
-			log.Print("Profile photos unavailable: invalid local storage configuration")
-		} else if store, err := storage.New(config); err != nil {
-			log.Print("Profile photos unavailable: incomplete storage configuration")
-		} else {
-			photos = store
-		}
+	config := storage.DevConfig()
+	if err := config.ValidateLocal(); err != nil {
+		log.Print("Profile photos unavailable: invalid local storage configuration")
+	} else if store, err := storage.New(config); err != nil {
+		log.Print("Profile photos unavailable: incomplete storage configuration")
+	} else {
+		photos = store
 	}
 	routes.LeaderboardRoutes(app, dal.NewLeaderboard(conn), photos)
 	PORT := os.Getenv("PORT")
