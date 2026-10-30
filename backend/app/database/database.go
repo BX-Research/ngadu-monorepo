@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"net"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -77,7 +79,15 @@ func LocalURL() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	u := &url.URL{Scheme: "postgresql", Host: "127.0.0.1:5432",
+	port := os.Getenv("DEV_DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	portNumber, err := strconv.Atoi(port)
+	if err != nil || portNumber < 1 || portNumber > 65535 {
+		return "", fmt.Errorf("invalid DEV_DB_PORT")
+	}
+	u := &url.URL{Scheme: "postgresql", Host: net.JoinHostPort("127.0.0.1", port),
 		User: url.UserPassword(user, password), Path: "/" + name, RawQuery: "sslmode=disable"}
 	return u.String(), nil
 }

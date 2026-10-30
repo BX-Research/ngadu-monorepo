@@ -31,13 +31,13 @@ Firebase manages login identities. PostgreSQL stores application data linked to 
 
 | Directory | Purpose | Current state |
 | --- | --- | --- |
-| frontend | Frontend with its own package manifest and Bun lockfile | Generated Next.js starter |
+| frontend | Frontend with its own package manifest and Bun lockfile | Database-backed local leaderboard; dashboard/matches remain demo flows |
 | backend | Separate Go backend | Health/readiness server, local user lookup, and development seeder; protected application endpoints pending |
 | docs | Functional specification | Maintained in Markdown |
 
 Root Bun scripts delegate to the frontend; the Makefile also provides Go and local database commands. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.
 
-The Go backend provides operational health/readiness endpoints. Goose SQL migrations define the current minimal schema. A separate development seeder inserts fixture data. Migrations run through a Go program under backend/scripts; no standalone Goose installation is required. Development fixtures live in backend/seeds/dev.sql and run through psql inside the local Compose database container. Docker Compose runs local PostgreSQL. A local development GET /api/users/{id} endpoint queries a user by application UUID and returns id, firebase_uid, display_name, and created_at. It returns 400 for invalid UUIDs, 404 for missing users, and 503 for database failures. This inspection endpoint has no authentication or membership checks; Firebase integration and protected application API endpoints remain unimplemented; the frontend uses demo data. The following sections describe proposed application behavior.
+The Go backend provides operational health/readiness endpoints. Goose SQL migrations define the current minimal schema. A separate development seeder inserts fixture data. Migrations run through a Go program under backend/scripts; no standalone Goose installation is required. Development fixtures live in backend/seeds/dev.sql and run through psql inside the local Compose database container. Docker Compose runs local PostgreSQL. A local development GET /api/users/{id} endpoint queries a user by application UUID and returns id, firebase_uid, display_name, and created_at. It returns 400 for invalid UUIDs, 404 for missing users, and 503 for database failures. This inspection endpoint has no authentication or membership checks; Firebase integration and protected application API endpoints remain unimplemented; the dashboard and match pages use demo data. A local-only leaderboard now reads seeded PostgreSQL ratings and private SeaweedFS S3 photos through Go and a same-origin Next.js proxy. The following sections describe proposed application behavior.
 
 ## 4. Proposed first release
 
@@ -52,7 +52,7 @@ The following scope needs confirmation:
 - Members viewing published pairings.
 - Manual refresh initially unless automatic updates are required.
 
-Payments, receipt uploads, chat, tournaments, rankings, notifications, and automatic email invitations are deferred. Score recording and custom profile uploads are optional extensions. SeaweedFS is selected for development but does not itself require an upload feature in the first release.
+Payments, receipt uploads, chat, tournaments, production rankings, notifications, and automatic email invitations are deferred. Score recording and custom profile uploads are optional extensions. SeaweedFS is selected for development but does not itself require an upload feature in the first release.
 
 ## 5. Users and permissions
 
@@ -243,3 +243,25 @@ These scenarios validate the proposed baseline once its scope is accepted:
 | Uploads | Whether the first release needs uploaded files |
 
 Confirmed technology choices remain stable while these questions are resolved. Proposed features and unselected backend tooling are not implied commitments.
+
+## 16. Implemented local leaderboard extension
+
+The user approved a development leaderboard with shared fictional fixtures.
+New migrations add a nullable user photo object key and community-specific
+rating snapshots (rating, wins, losses), constrained to existing memberships.
+The main demo club has 23 ranked players; the second has two. `make seed`
+initializes PostgreSQL plus private SeaweedFS S3 photo fixtures. Fresh local
+setups share the same data; reruns preserve edited profiles, ratings, and photos.
+
+The Go API returns the top 10 by rating descending and user UUID ascending,
+sequential ranks, total ranked members, and optional 15-minute signed photo URLs.
+The frontend queries through a fixed same-origin proxy on each page visit,
+without leaderboard caching. It handles loading, errors/retry, empty clubs,
+small podiums, and image failures using a local default profile picture.
+
+The API requires explicit local-development enablement and loopback service
+binding. This is not a production authorization design. Firebase and membership
+checks remain required before product deployment. Seasons, separate match-format
+ladders, score-driven rating updates, image uploads, and dashboard/match-page
+integration are not included. Local demo match results do not affect this ladder.
+See the [seed guide](../backend/scripts/README.md) and [backend API guide](../backend/README.md#leaderboard-local-development).

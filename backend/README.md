@@ -31,3 +31,45 @@ matches, and 503 when the database lookup fails. Errors use an `error` field
 without connection details. Requests have a three-second database timeout.
 This endpoint is for local inspection; it has no Firebase authentication or
 community authorization and must gain those checks before product use.
+
+## Leaderboard (local development)
+
+`make dev-backend` explicitly enables the fictional leaderboard using
+`ENABLE_DEV_LEADERBOARD=true`. Direct Go startup requires that flag to opt in;
+without it the route is absent (404). The backend binds to loopback. Production
+use requires Firebase ID token verification and community membership checks.
+
+`GET /api/communities/{communityId}/leaderboard` returns:
+
+```json
+{
+  "community": { "id": "00000000-0000-4000-8000-000000000101", "name": "Demo Shuttle Club" },
+  "total_players": 23,
+  "players": [
+    { "rank": 1, "user_id": "00000000-0000-4000-8000-000000000201", "display_name": "Adi Demo", "rating": 1750, "wins": 30, "losses": 5, "photo_url": null }
+  ]
+}
+```
+
+The example shows one row; responses contain up to 10. `photo_url` is either a
+15-minute signed private S3 URL or null. Object keys and storage credentials are
+not returned. No bucket listing or per-player object checks occur during reads.
+Missing objects fall back in the browser; invalid storage configuration yields
+null URLs without failing the leaderboard.
+
+Ranks are sequential, ordered by rating descending then user UUID ascending.
+Count and list use a single database statement. Each request queries stored
+rating snapshots with a three-second timeout and `Cache-Control: no-store`.
+Malformed UUIDs return 400, unknown communities 404, empty communities 200 with
+an empty array, and database failure 503 without internal error details.
+The dashboard and browser-local demo matches do not update these ratings.
+
+The Next.js endpoint `/api/leaderboard` forwards only this fixed operation to a
+loopback backend, using server-only `NGADU_BACKEND_ORIGIN` (default
+`http://127.0.0.1:8080`) and `DEV_LEADERBOARD_COMMUNITY_ID` (default main fixture
+club). It also requires `ENABLE_DEV_LEADERBOARD=true`. Set optional overrides in
+the shell running Next.js, or in its local environment file; root `.env` loading
+is owned by the Go utilities/Compose. Never use `NEXT_PUBLIC_` for credentials.
+
+See the [seed guide](scripts/README.md) for deterministic fixtures and storage
+commands. S3 clients use the SDK's [custom endpoint support](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-endpoints.html).

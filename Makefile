@@ -4,8 +4,9 @@ BUN ?= bun
 GO ?= go
 AIR ?= air
 DOCKER ?= docker
+FRONTEND_PORT ?= 3000
 
-.PHONY: help install install-frontend install-backend hooks dev dev-frontend dev-backend db-up db-stop db-down db-logs db-migrate db-status db-revision db-seed seed lint typecheck build start test-backend vet-backend check
+.PHONY: help install install-frontend install-backend hooks dev dev-frontend dev-backend db-up db-stop db-down db-logs db-migrate db-status db-revision db-seed seed storage-up storage-stop storage-seed lint typecheck build start test-backend vet-backend check
 
 help:
 	@printf '%s\n' \
@@ -14,7 +15,10 @@ help:
 	  'make dev              Start Docker PostgreSQL, Go backend with Air, and frontend' \
 	  'make dev-backend      Run the Go backend with Air live reload' \
 	  'make dev-frontend     Run Next.js development server' \
-	  'make seed / db-seed   Start, migrate, and seed local PostgreSQL' \
+	  'make seed            Seed local PostgreSQL and S3 photo fixtures' \
+	  'make db-seed         Start, migrate, and seed local PostgreSQL' \
+	  'make storage-seed    Start local SeaweedFS and seed private photos' \
+	  'make storage-stop    Stop local storage, preserving data' \
 	  'make db-migrate       Apply local database migrations using the Go Goose library' \
 	  'make db-status        Show local migration status' \
 	  'make db-revision msg=NAME  Create a SQL migration using the Go Goose library' \
@@ -46,18 +50,18 @@ hooks:
 	cp .env.example .env
 
 dev: .env
-	$(MAKE) db-seed
+	$(MAKE) seed
 	@trap 'trap - EXIT INT TERM; if jobs -p | read pid; then kill 0; fi' EXIT INT TERM; \
 	$(MAKE) dev-backend & \
 	$(MAKE) dev-frontend & \
 	wait
 
 dev-frontend:
-	$(BUN) run dev
+	ENABLE_DEV_LEADERBOARD=true $(BUN) run dev --hostname 127.0.0.1 --port $(FRONTEND_PORT)
 
 dev-backend:
 	@set -e; local_db_url="$$( $(GO) -C backend run ./scripts/dburl )"; \
-	cd backend && DATABASE_URL="$$local_db_url" $(AIR) -c .air.toml
+	cd backend && ENABLE_DEV_LEADERBOARD=true DATABASE_URL="$$local_db_url" $(AIR) -c .air.toml
 
 db-up:
 	$(DOCKER) compose up -d --wait --wait-timeout 60 db
@@ -82,9 +86,18 @@ db-revision:
 	@test -n "$$msg" || { echo 'Usage: make db-revision msg=NAME'; exit 1; }
 	$(GO) -C backend run ./scripts/migrate create "$$msg"
 
-db-seed: seed
+seed: db-seed storage-seed
 
-seed: db-migrate
+storage-up:
+	$(DOCKER) compose up -d --wait --wait-timeout 90 storage
+
+storage-stop:
+	$(DOCKER) compose stop storage
+
+storage-seed: storage-up
+	$(GO) -C backend run ./scripts/seed-storage
+
+db-seed: db-migrate
 	$(DOCKER) compose exec -T db sh -c 'exec psql -X --set=ON_ERROR_STOP=1 --username="$$POSTGRES_USER" --dbname="$$POSTGRES_DB"' < backend/seeds/dev.sql
 
 lint:
