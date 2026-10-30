@@ -70,3 +70,41 @@ is owned by the Go utilities/Compose. Never use `NEXT_PUBLIC_` for credentials.
 
 See the [seed guide](scripts/README.md) for deterministic fixtures and storage
 commands. S3 clients use the SDK's [custom endpoint support](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-endpoints.html).
+
+## Configuration and dependency injection
+
+`app/main.go` delegates to `server.Run`. The startup composition root in
+`app/server/run.go` loads `config.Config`, opens the database and S3 client, and
+injects the user lookup, leaderboard reader, photo signer, and readiness check
+into `server.New(Dependencies)`. The HTTP constructor does not read environment
+variables or create concrete clients; tests inject alternatives directly.
+Missing or invalid S3 configuration injects no photo signer, leaving standings
+available with placeholder photos. Only the development seeder enforces local
+storage; application clients may use an explicitly configured S3 endpoint.
+
+S3 configuration uses `S3_ENDPOINT_HOST`, `S3_ENDPOINT_URL`, `S3_BUCKET`,
+`S3_REGION`, `S3_ACCESS_KEY`, and `S3_SECRET_KEY`. The host must match the URL's
+hostname when supplied. `make dev` prepares `localhost` and
+`http://localhost:9000` in root `.env` before starting services. `S3_PORT` selects
+an alternative local port for isolated setups. `make dev-env` runs only this
+preparation. Existing unrelated settings and S3 credentials are retained.
+
+## Avatar normalization pipeline
+
+Avatar objects use `avatars/{userId}.jpg`; the UUID is canonicalized and validated
+by a shared helper. The leaderboard derives this key for each player instead of
+reading `profile_photo_key`. An absent object still falls back to the frontend's
+SVG placeholder. Signed reads do not perform a per-player existence lookup.
+
+`avatars.New(writer).Upload(ctx, userID, reader)` accepts an injected
+`avatars.Writer`. `storage.Store` implements it with a private S3 upload. The
+pipeline decodes JPEG/PNG/GIF/WebP input, checks a 10 MiB byte limit and a
+25-million-pixel limit before full decode, corrects JPEG EXIF orientation,
+center-crops/resizes to 512×512, flattens transparency onto white, and encodes
+JPEG at quality 85. GIF inputs use the first frame; animated WebP is unsupported; unsupported
+formats including SVG are rejected. Re-encoding omits source metadata.
+
+Uploads replace the same deterministic key with `Content-Type: image/jpeg` and
+`Cache-Control: private, no-cache` so fixed-key replacements can be revalidated.
+The caller must supply the authorized user ID. This is the backend pipeline
+only: no HTTP upload endpoint, upload UI, or authentication bypass is included.

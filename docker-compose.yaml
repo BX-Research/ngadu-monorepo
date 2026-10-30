@@ -20,11 +20,11 @@ services:
     image: chrislusf/seaweedfs:4.51
     command: ['mini', '-dir=/data', '-ip=127.0.0.1', '-ip.bind=0.0.0.0']
     environment:
-      AWS_ACCESS_KEY_ID: ${DEV_S3_ACCESS_KEY:-ngadu-local}
-      AWS_SECRET_ACCESS_KEY: ${DEV_S3_SECRET_KEY:-change-me-local-storage-only}
-      S3_BUCKET: ${DEV_S3_BUCKET:-ngadu-dev}
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-ngadu-local}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-change-me-local-storage-only}
+      S3_BUCKET: ${S3_BUCKET:-ngadu-dev}
     ports:
-      - '127.0.0.1:${DEV_S3_PORT:-8333}:8333'
+      - '127.0.0.1:${S3_PORT:-9000}:8333'
     volumes:
       - seaweedfs-data:/data
     healthcheck:

@@ -1,4 +1,4 @@
-package main
+package seeds
 
 import (
 	"context"
@@ -85,28 +85,28 @@ func TestLeaderboardFixturesPreserveEdits(t *testing.T) {
 	if err := seedSQL(ctx, conn); err != nil {
 		t.Fatal(err)
 	}
-	var count, missing, distinctRatings int
-	if err := conn.QueryRow(ctx, `SELECT count(*), count(*) FILTER (WHERE u.profile_photo_key IS NULL), count(DISTINCT r.rating)
- FROM player_ratings r JOIN users u ON u.id=r.user_id`).Scan(&count, &missing, &distinctRatings); err != nil {
+	var count, distinctRatings int
+	if err := conn.QueryRow(ctx, `SELECT count(*), count(DISTINCT r.rating)
+ FROM player_ratings r JOIN users u ON u.id=r.user_id`).Scan(&count, &distinctRatings); err != nil {
 		t.Fatal(err)
 	}
-	if count != 24 || missing == 0 || distinctRatings >= count {
-		t.Fatalf("fixtures: count=%d missing=%d ratings=%d", count, missing, distinctRatings)
+	if count != 24 || distinctRatings >= count {
+		t.Fatalf("fixtures: count=%d ratings=%d", count, distinctRatings)
 	}
 	if _, err := conn.Exec(ctx, `UPDATE player_ratings SET rating=2222, wins=99 WHERE user_id='00000000-0000-4000-8000-000000000201';
- UPDATE users SET profile_photo_key='custom/photo.png' WHERE id='00000000-0000-4000-8000-000000000201'`); err != nil {
+ UPDATE users SET display_name='Edited Avatar Demo' WHERE id='00000000-0000-4000-8000-000000000201'`); err != nil {
 		t.Fatal(err)
 	}
 	if err := seedSQL(ctx, conn); err != nil {
 		t.Fatal(err)
 	}
 	var rating, wins int
-	var key string
-	if err := conn.QueryRow(ctx, `SELECT rating,wins,profile_photo_key FROM player_ratings JOIN users ON users.id=user_id
- WHERE user_id='00000000-0000-4000-8000-000000000201'`).Scan(&rating, &wins, &key); err != nil {
+	var name string
+	if err := conn.QueryRow(ctx, `SELECT rating,wins,display_name FROM player_ratings JOIN users ON users.id=user_id
+ WHERE user_id='00000000-0000-4000-8000-000000000201'`).Scan(&rating, &wins, &name); err != nil {
 		t.Fatal(err)
 	}
-	if rating != 2222 || wins != 99 || key != "custom/photo.png" {
+	if rating != 2222 || wins != 99 || name != "Edited Avatar Demo" {
 		t.Fatal("seed overwrote edits")
 	}
 	if _, err := conn.Exec(ctx, `INSERT INTO player_ratings(user_id,rating,wins,losses) VALUES('00000000-0000-4000-8000-000000000999',1200,0,0)`); err == nil {

@@ -7,14 +7,17 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
+	"github.com/BX-Research/ngadu-monorepo/backend/app/avatars"
+	"github.com/BX-Research/ngadu-monorepo/backend/app/config"
 	"github.com/BX-Research/ngadu-monorepo/backend/app/database"
 	"github.com/BX-Research/ngadu-monorepo/backend/app/storage"
+	"github.com/BX-Research/ngadu-monorepo/backend/seeds"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
+	"github.com/jackc/pgx/v5"
 )
 
 func missing(err error) bool {
@@ -44,8 +47,8 @@ func seedPhoto(ctx context.Context, client photoWriter, bucket, key string, data
 		}
 		_, err = client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket: aws.String(bucket), Key: aws.String(key), Body: bytes.NewReader(data),
-			ContentType: aws.String("image/svg+xml"), IfNoneMatch: aws.String("*"),
-			CacheControl: aws.String("private, max-age=300"),
+			ContentType: aws.String("image/jpeg"), IfNoneMatch: aws.String("*"),
+			CacheControl: aws.String("private, no-cache"),
 		})
 		if err == nil {
 			return nil
@@ -64,11 +67,55 @@ func seedPhoto(ctx context.Context, client photoWriter, bucket, key string, data
 	}
 }
 
+type avatarUsers interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+}
+
+func seedAvatars(ctx context.Context, db avatarUsers, store photoWriter, bucket string) error {
+	fixtures, err := seeds.AvatarFixtures()
+	if err != nil {
+		return err
+	}
+	uids := make([]string, 0, len(fixtures))
+	for _, fixture := range fixtures {
+		uids = append(uids, fixture.FirebaseUID)
+	}
+	rows, err := db.Query(ctx, `SELECT id::text,firebase_uid FROM users WHERE firebase_uid=ANY($1)`, uids)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	ids := map[string]string{}
+	for rows.Next() {
+		var id, uid string
+		if err := rows.Scan(&id, &uid); err != nil {
+			return err
+		}
+		ids[uid] = id
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if len(ids) != len(fixtures) {
+		return fmt.Errorf("avatar users missing; run make db-seed first")
+	}
+	for _, fixture := range fixtures {
+		key, err := avatars.Key(ids[fixture.FirebaseUID])
+		if err != nil {
+			return err
+		}
+		if err := seedPhoto(ctx, store, bucket, key, fixture.JPEG); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func run() error {
 	if err := database.LoadEnv(); err != nil {
 		return err
 	}
-	cfg := storage.DevConfig()
+	cfg := config.StorageFromEnv()
 	if err := cfg.ValidateLocal(); err != nil {
 		return err
 	}
@@ -85,24 +132,17 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("prepare local bucket: %w", err)
 	}
-	root, err := database.Root()
+	databaseURL, err := database.LocalURL()
 	if err != nil {
 		return err
 	}
-	paths, err := filepath.Glob(filepath.Join(root, "backend/seeds/photos/*.svg"))
+	db, err := database.Open(ctx, databaseURL)
 	if err != nil {
 		return err
 	}
-	for _, path := range paths {
-		key := "profiles/" + filepath.Base(path)
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		if err := seedPhoto(ctx, store.Client, cfg.Bucket, key, data); err != nil {
-			return err
-		}
-
+	defer db.Close()
+	if err := seedAvatars(ctx, db, store.Client, cfg.Bucket); err != nil {
+		return err
 	}
 	fmt.Println("Local profile photo fixtures ready (existing objects preserved).")
 	return nil

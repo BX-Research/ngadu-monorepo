@@ -8,7 +8,6 @@ type RankedPlayer struct {
 	Wins        int     `json:"wins"`
 	Losses      int     `json:"losses"`
 	PhotoURL    *string `json:"photo_url"`
-	PhotoKey    string  `json:"-"`
 }
 
 type Leaderboard struct {

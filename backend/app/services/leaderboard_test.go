@@ -23,7 +23,7 @@ func (s *ladderStub) Leaderboard(ctx context.Context) (types.Leaderboard, error)
 		return types.Leaderboard{}, errors.New("missing deadline")
 	}
 	return types.Leaderboard{TotalPlayers: 1,
-		Players: []types.RankedPlayer{{Rank: 1, UserID: "player", DisplayName: "Test Player", Rating: 1500, PhotoKey: "profiles/sage.svg"}}}, s.err
+		Players: []types.RankedPlayer{{Rank: 1, UserID: "player", DisplayName: "Test Player", Rating: 1500}}}, s.err
 }
 
 type photoStub struct{ err error }

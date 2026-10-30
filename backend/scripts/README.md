@@ -16,7 +16,7 @@ make db-seed                            # Start, migrate, and seed local Postgre
 
 `make seed` runs the database workflow plus local SeaweedFS startup and photo
 seeding. `make db-seed` operates on PostgreSQL alone. `make storage-seed`
-starts storage and seeds only photos. Install Go dependencies
+prepares the local database fixtures and storage, then seeds per-user avatars. Install Go dependencies
 with `make install-backend`. These commands require Go compatible with
 `backend/go.mod`; database startup requires Docker Compose and a running daemon.
 Creating a migration does not require PostgreSQL or Docker.
@@ -41,14 +41,14 @@ and storage startup, migrations, and seeding. Its shell trap stops the app proce
 The SQL runs in one transaction; `psql` stops immediately on errors. It looks up
 users by Firebase UID, preserves existing display names, and reuses their stored
 application IDs for global ratings. Reruns do not duplicate fixtures or overwrite
-edited profiles, photo keys, wins/losses, or ratings. Conflicting IDs or other
+edited profiles, wins/losses, or ratings. Conflicting IDs or other
 constraint violations roll back the entire seed transaction. Every fresh database
 starts with the same 24 fictional players and 24 global rating records; edited
 local databases may differ. Ties and missing photos are intentional fixtures.
 
 The global-ladder migration intentionally discards the old rating snapshots.
 Run `make seed` (or `make db-seed`) after migrating to load the shared baseline.
-Profiles and photo references are preserved. This one-time reset is forward-only;
+User profiles are preserved. This one-time reset is forward-only;
 restoring a backup is required to return to the previous schema/data. Subsequent
 seed runs preserve edits rather than resetting ratings again.
 
@@ -56,10 +56,14 @@ seed runs preserve edits rather than resetting ratings again.
 
 `seed-storage/` uses the AWS Go S3 SDK with a loopback-only endpoint, static local
 credentials, and path-style requests. It ignores ambient AWS credentials and
-never selects AWS endpoints. `DEV_S3_*` settings configure the local bucket,
-region, credentials, and port. `make storage-seed` uploads the three SVG portraits
-in `backend/seeds/photos/` under `profiles/`, preserving existing objects.
-`profiles/missing.svg` is deliberately not uploaded. These illustrations are
+never selects AWS endpoints. `S3_*` settings configure the local bucket,
+endpoint host/URL, region, credentials, and port. `make dev-env` writes
+`S3_ENDPOINT_HOST=localhost` and `S3_ENDPOINT_URL=http://localhost:9000`
+(or the selected `S3_PORT`) before local storage startup. `make storage-seed` uses the three JPEG portraits
+in `backend/seeds/photos/` to seed 14 users under `avatars/{userId}.jpg`, preserving
+existing objects. The user IDs are looked up by fixture Firebase UID in the
+local database, so existing users with different stored UUIDs get the correct
+avatar keys. Ten players intentionally have no object to exercise the SVG placeholder. These illustrations are
 repository-owned fictional fixtures. No real people or external image downloads
 are involved. Bucket initialization and uploads are repeatable. Conditional uploads recheck
 object existence and retry within a 60-second deadline while SeaweedFS initializes
@@ -73,7 +77,7 @@ separate Compose project and unused ports for disposable integration checks:
 
 ```bash
 export COMPOSE_PROJECT_NAME=ngadu-ladder-test
-export DEV_DB_PORT=55440 DEV_S3_PORT=18539
+export DEV_DB_PORT=55440 S3_PORT=18539
 make seed
 # Point TEST_DATABASE_URL at this local database using your development credentials.
 export TEST_S3_ENDPOINT=http://127.0.0.1:18539
@@ -100,3 +104,9 @@ go vet ./...
 Tests create and remove isolated schemas inside that database. Without
 `TEST_DATABASE_URL`, database tests are skipped. Always point seed and test
 commands at development databases.
+
+The derived-avatar migration drops `users.profile_photo_key` without changing
+users or ratings. Reads and writes use the shared UUID-based key helper. Old
+`profiles/*.svg` objects are no longer referenced; seeding does not delete
+unrelated storage objects. `make storage-seed` now requires the seeded local
+users to resolve their actual IDs and therefore runs the database setup first.

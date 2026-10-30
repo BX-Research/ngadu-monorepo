@@ -15,11 +15,11 @@ Dashboard and match pages remain separate browser demo flows.
 - Index ratings descending and user UUID ascending for deterministic ordering.
 - Apply a new migration; retain historical migration files unchanged.
 - Reset the old ratings as explicitly selected by the user. Preserve users,
-  display names, and photo keys. Remove the obsolete grouping tables.
+  display names, and stored avatar objects. Remove the obsolete grouping tables.
 - The reset is forward-only: discarded rows cannot be reconstructed by a down
   migration. `make seed` restores the shared global baseline after migration.
 - Seed all 24 fictional players, including Drew, with 24 global ratings. Include
-  ties, missing photo references, and missing objects. Later seed runs preserve
+  ties and missing avatar objects. Later seed runs preserve
   locally edited profiles and ratings and resolve stored IDs by Firebase UID.
 
 ## API and frontend
@@ -42,7 +42,7 @@ Dashboard and match pages remain separate browser demo flows.
 
 ## Storage and development setup
 
-- Keep SeaweedFS 4.51, its private development bucket, and committed SVG portraits.
+- Keep SeaweedFS 4.51, its private development bucket, and committed JPEG portraits.
 - `make seed` prepares PostgreSQL and local S3; `make db-seed` runs database-only
   setup; `make storage-seed` preserves existing objects while adding fixtures.
 - Storage seeding retries conditional-write readiness failures within 60 seconds.
@@ -52,7 +52,7 @@ Dashboard and match pages remain separate browser demo flows.
 ## Validation
 
 - Migration test: old ratings are removed, grouping tables no longer exist,
-  profiles/photo references survive, and seeding restores exactly 24 ratings.
+  profiles survive, and seeding restores exactly 24 ratings.
 - Seed tests: rerun preservation, fixed baseline, alternate stored user IDs,
   atomic rollback, unique user ratings, valid foreign keys, nonnegative wins.
 - DAL/API tests: global top ten and count, stable ties, rating refresh, empty
@@ -83,3 +83,52 @@ Dashboard and match pages remain separate browser demo flows.
   ratings, zero obsolete grouping tables. Private photo fixtures were preserved.
 - Independent review found no actionable issues. Disposable test services were
   stopped and removed after verification; the normal local stack stays running.
+
+## Configuration and dependency injection revision
+
+- `main.go` delegates startup to `server.Run`; the composition root loads
+  `config.Config`, opens concrete clients, and injects them into `server.New`.
+- `server.Dependencies` supplies user lookup, leaderboard read, photo signing,
+  and readiness interfaces. The HTTP constructor never loads environment files.
+- Generic `S3_*` configuration replaces `DevConfig`. Application clients support
+  configured remote endpoints; only local seeding enforces loopback storage.
+- `make dev` prepares `S3_ENDPOINT_HOST=localhost` and
+  `S3_ENDPOINT_URL=http://localhost:9000` in root `.env`. `S3_PORT` supports isolated
+  setups. Existing settings and quoted/multiline credentials are preserved.
+- Go tests/vet passed with PostgreSQL, private S3 reads on port 9000, and Compose
+  dotenv compatibility checks enabled, with no integration skips. Regression
+  tests cover dependency injection, optional photos, generic configuration,
+  repeated environment setup, credential punctuation, and multiline values.
+- An isolated `make dev` check passed startup, migrations/seeding, API and Next.js
+  proxy requests, signed photo reads, readiness, and Ctrl+C shutdown. The temporary
+  checkout used the installed dependencies with Webpack and disabled Go VCS
+  stamping because it had no Git metadata. The existing Next.js advisory appeared.
+- Both review findings about dotenv value preservation were fixed and re-tested;
+  the final focused review found no actionable issues.
+
+## Derived JPEG avatars revision
+
+- Use the canonical `avatars/{userId}.jpg` key for signing, writes and seeding.
+- Remove `users.profile_photo_key` through a new migration; preserve users/ratings.
+- Seed 14 per-user avatars from three committed JPEG illustrations; resolve
+  actual UUIDs by Firebase UID and preserve existing objects on repeated runs.
+- Keep the frontend SVG placeholder for missing/failed avatar reads.
+- Add a backend-only upload service with an injected writer. Normalize JPEG,
+  PNG, GIF and WebP to static 512×512 quality-85 JPEGs, white background,
+  JPEG EXIF orientation correction and stripped source metadata. Limit input
+  to 10 MiB and 25 million pixels before full decode.
+- Set private/no-cache object headers for deterministic-key replacement.
+- No HTTP upload endpoint is included, as selected by the user. The future
+  caller must authorize the user ID before invoking the pipeline.
+
+Avatar validation results: all Go tests and vet passed with PostgreSQL, S3 and
+Compose dotenv integration enabled, with no skips. JPEG upload/replacement and
+private/missing object behavior passed against S3. Browser checks passed for
+JPEG display, SVG fallbacks, errors/retry and small podiums. Cropping before
+resizing bounds extreme-aspect-ratio allocations; regressions for 100000×1 and
+1×100000 inputs pass. The focused review found no remaining actionable issues.
+
+The configured local database now has no `profile_photo_key` column, and local
+S3 on port 9000 contains the per-user JPEG fixtures. The real local storage
+passed private/signed/missing-avatar and normalization/replacement smoke checks.
+Disposable avatar test services and volumes were removed afterward.

@@ -58,11 +58,11 @@ make check       # Frontend lint/types/build, Go tests/vet
 make help        # List the available commands
 ```
 
-`make dev` first copies `.env.example` to `.env` if `.env` is missing, preserving any existing `.env`. It then starts PostgreSQL, applies migrations, seeds development fixtures, starts SeaweedFS and seeds profile photos, then runs `make dev-backend` and `make dev-frontend` concurrently. Open <http://127.0.0.1:3000>; backend liveness is at <http://127.0.0.1:8080/healthz> and database readiness at <http://127.0.0.1:8080/readyz>. The backend also provides a local development `GET /api/users/{id}` lookup; see [the backend guide](backend/README.md). Open `/leaderboard` to view database standings with signed photo URLs and a placeholder for missing images. Protected product APIs remain pending. Air rebuilds and restarts the backend after Go edits; Next.js reloads frontend edits automatically.
+`make dev` first copies `.env.example` to `.env` if `.env` is missing, preserving any existing `.env`. It then writes `S3_ENDPOINT_HOST=localhost` and `S3_ENDPOINT_URL=http://localhost:9000` to root `.env` (or the selected `S3_PORT`), preserving unrelated settings and existing S3 credentials. It starts PostgreSQL, applies migrations, seeds development fixtures, starts SeaweedFS and seeds profile photos, then runs `make dev-backend` and `make dev-frontend` concurrently. Open <http://127.0.0.1:3000>; backend liveness is at <http://127.0.0.1:8080/healthz> and database readiness at <http://127.0.0.1:8080/readyz>. The backend also provides a local development `GET /api/users/{id}` lookup; see [the backend guide](backend/README.md). Open `/leaderboard` to view database standings with signed photo URLs and a placeholder for missing images. Protected product APIs remain pending. Air rebuilds and restarts the backend after Go edits; Next.js reloads frontend edits automatically.
 
 Ctrl+C stops both app processes. PostgreSQL and SeaweedFS stay running; `make storage-stop` stops storage while preserving its data. `make db-stop` stops PostgreSQL without deleting its named data volume. `make db-up` starts it again and `make db-logs` shows its logs. The recipe waits for both apps; if one exits, stop the remaining app with Ctrl+C.
 
-Required database settings are in [.env.example](.env.example); copy it to root `.env`, or set the listed variables in your shell. Database settings have no defaults. Next.js uses its default port 3000; the Go backend listens on localhost:8080 and PostgreSQL on localhost:5432. Use `DEV_DB_PORT` and `DEV_S3_PORT` for local infrastructure ports, `PORT` for Go, `FRONTEND_PORT` for Next.js through Make, and `NGADU_BACKEND_ORIGIN` in the Next.js shell when Go uses a different port. The checked-in database password is a local development placeholder. Set a local password before first use. Changing database credentials after the volume is initialized requires updating the database role too; it does not reset existing data.
+Required database settings are in [.env.example](.env.example); copy it to root `.env`, or set the listed variables in your shell. Database settings have no defaults. Next.js uses its default port 3000; the Go backend listens on localhost:8080 and PostgreSQL on localhost:5432. Use `DEV_DB_PORT` and `S3_PORT` for local infrastructure ports, `PORT` for Go, `FRONTEND_PORT` for Next.js through Make, and `NGADU_BACKEND_ORIGIN` in the Next.js shell when Go uses a different port. The checked-in database password is a local development placeholder. Set a local password before first use. Changing database credentials after the volume is initialized requires updating the database role too; it does not reset existing data.
 
 `make seed` starts the same Docker database and writes the development fixtures described in the [seeder guide](backend/scripts/README.md). Migrations run Go directly, load root `.env`, and construct a local database URL from `DEV_DB_*`. Seeding executes `backend/seeds/dev.sql` using `psql` inside the Compose database container. Both ignore ambient `DATABASE_URL` and host PostgreSQL connection variables. All Make service/database commands target local development. Goose is pinned in `backend/go.mod`, so no separate Goose installation is needed. `make db-seed` applies migrations and seeds PostgreSQL alone; `make seed` also starts and seeds SeaweedFS. Fresh setups receive 24 fictional users and the same rating snapshots. Reruns preserve profile/rating edits and existing photo objects. Go database tests require `TEST_DATABASE_URL`; otherwise they are skipped. Existing Bun commands remain available. Use `make install-frontend` or `make install-backend` to install dependencies for one service.
 
@@ -112,7 +112,7 @@ Agents use the shared [PR skill](.agents/skills/pr/SKILL.md), available as `$pr`
 - Backend: separate Go service using Fiber v3; remaining API tooling is undecided.
 - Application database: PostgreSQL.
 - Development file storage: SeaweedFS.
-- Local development: Docker Compose runs PostgreSQL; `make dev` runs Next.js and Go locally. SeaweedFS exposes private S3 storage on loopback port 8333.
+- Local development: Docker Compose runs PostgreSQL; `make dev` runs Next.js and Go locally. SeaweedFS exposes private S3 storage on loopback port 9000.
 
 Firebase manages login identities; PostgreSQL will store application data linked to Firebase UIDs. Firestore is not required. Production hosting and storage are undecided.
 
@@ -121,3 +121,10 @@ Firebase manages login identities; PostgreSQL will store application data linked
 Read [the functional specification](docs/functional-spec.md). Confirmed choices are separated from proposed features and open decisions.
 
 Read [AGENTS.md](AGENTS.md) and nested instructions before making changes. Keep credentials, environment files, dependencies, build files, and local service data out of Git.
+
+Backend startup reads generic `S3_ENDPOINT_HOST`, `S3_ENDPOINT_URL`, `S3_BUCKET`,
+`S3_REGION`, `S3_ACCESS_KEY`, and `S3_SECRET_KEY`. Development setup supplies the
+local defaults; the application configuration does not hardcode local endpoints.
+`make dev-env` prepares these settings without starting services. Existing
+`DEV_S3_*` credentials are migrated to their `S3_*` names if the new settings
+are absent. The local storage service remains private and publishes port 9000.

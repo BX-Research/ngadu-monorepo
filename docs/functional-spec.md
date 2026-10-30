@@ -80,9 +80,16 @@ A client-supplied user ID or email is not proof of identity. The Firebase UID, r
 
 ### Player profiles
 
-Profiles contain an application ID, unique Firebase UID, display name, and optional photo reference. Skill level is proposed; its scale and effect on matchmaking remain undecided.
+Profiles contain an application ID, unique Firebase UID, and display name. Skill level is proposed; its scale and effect on matchmaking remain undecided.
 
-The app can use Google's photo URL without uploading a copy. PostgreSQL stores the reference. Unavailable photos fall back to initials or a default avatar. Custom pictures need the optional upload feature.
+Avatars use the derived object key `avatars/{userId}.jpg`; no photo key is stored
+in PostgreSQL. Missing or unavailable objects show the SVG placeholder. The
+backend normalization/upload pipeline accepts JPEG, PNG, GIF, and WebP, checks
+10 MiB and 25-million-pixel limits, applies JPEG orientation, center-crops/resizes
+to 512×512, flattens transparency onto white, and re-encodes JPEG at quality 85
+without source metadata. An HTTP upload endpoint and profile-upload UI remain
+unimplemented; an authenticated caller must authorize the user ID before using
+the pipeline.
 
 ## 7. Global leaderboard
 
@@ -104,14 +111,14 @@ is absent or fails to load. Database failures return 503; empty standings return
 
 The migration deliberately resets old ratings, as requested by the user.
 `make seed` restores the shared baseline of 24 fictional players and 24 global
-rating records. Profiles and photo references survive migration; later seed
+rating records. Profiles survive migration; later seed
 reruns preserve edits to profiles, ratings, and existing photo objects.
 The reset migration is forward-only because discarded records cannot be
 reconstructed by rollback. Historical migrations remain unchanged.
 
 The current local read API has no authentication. Firebase verification and
 application permissions for future protected operations remain unimplemented.
-Seasons, separate match-format ladders, score-driven rating updates, uploads,
+Seasons, separate match-format ladders, score-driven rating updates, upload APIs/UI,
 and dashboard/match-page integration remain outside this implementation. Demo
 match results in browser storage do not update global ratings.
 
@@ -160,7 +167,7 @@ The proposed baseline publishes one round at a time. Later rounds, corrections t
 | --- | --- |
 | Sign in | Google login and authentication errors |
 | Dashboard | Upcoming sessions and profile navigation |
-| Profile | Display name, photo reference, optional skill level |
+| Profile | Display name, derived JPEG avatar, optional skill level |
 | Session detail | Time, venue, roster, joining/leaving, published pairings |
 | Organizer session controls | Settings, participants, draft generation, publication |
 
@@ -170,7 +177,7 @@ Support phone and desktop layouts, keyboard navigation, labeled inputs, and load
 
 | Record | Main information |
 | --- | --- |
-| User | Application ID, unique Firebase UID, display name, optional email/photo reference |
+| User | Application ID, unique Firebase UID, display name, optional email |
 | Player rating | User ID, one global rating, wins, losses, updated time |
 | Session | Details, start instant, timezone, state, optional capacity/courts |
 | Participation | Session and user; unique session-user pair |
@@ -186,7 +193,7 @@ REST with JSON is proposed, not selected. API schemas, session transport, and wh
 
 ## 12. Optional uploads and access protection
 
-If uploads are selected, the backend authorizes them and restricts file type and size. SeaweedFS stores development files; PostgreSQL stores object references and ownership metadata, not image bytes.
+If uploads are selected, the backend authorizes them and restricts file type and size. SeaweedFS stores development files; Avatar keys are derived from user UUIDs, and image bytes stay in storage. Other uploaded file types would need their own metadata design.
 
 Private files require authorized retrieval. Public delivery, size limits, formats, replacement cleanup, retention, and production storage must be chosen before enabling uploads.
 
@@ -196,7 +203,7 @@ The API distinguishes unauthenticated requests, denied access, invalid input, mi
 
 ## 13. Development and deployment
 
-`make dev` starts PostgreSQL through Docker Compose, waits for database health, applies migrations and seeds development fixtures, then runs the backend and Next.js concurrently through Make. The shell recipe waits for both processes; if one app exits, the other remains running until stopped. Ctrl+C stops both app processes; PostgreSQL can be stopped separately with `make db-stop`. Its named volume persists across ordinary stops and restarts. `make seed` migrates and seeds the local development database and initializes private S3 photo fixtures; `make db-seed` runs only the database steps. `make db-migrate` applies migrations, `make db-status` shows migration status, and `make db-revision msg=NAME` creates a SQL template. All Make service/database commands target local development and ignore ambient DATABASE_URL. Root `.env` or shell variables configure development database credentials. Next.js uses its default port 3000, the Go backend listens on localhost:8080, and PostgreSQL listens on localhost:5432. Docker Compose also runs SeaweedFS on loopback port 8333; frontend/backend production images remain pending. Production storage and deployment remain undecided.
+`make dev` starts PostgreSQL through Docker Compose, waits for database health, applies migrations and seeds development fixtures, then runs the backend and Next.js concurrently through Make. The shell recipe waits for both processes; if one app exits, the other remains running until stopped. Ctrl+C stops both app processes; PostgreSQL can be stopped separately with `make db-stop`. Its named volume persists across ordinary stops and restarts. `make seed` migrates and seeds the local development database and initializes private S3 photo fixtures; `make db-seed` runs only the database steps. `make db-migrate` applies migrations, `make db-status` shows migration status, and `make db-revision msg=NAME` creates a SQL template. All Make service/database commands target local development and ignore ambient DATABASE_URL. Root `.env` or shell variables configure development database credentials. Next.js uses its default port 3000, the Go backend listens on localhost:8080, and PostgreSQL listens on localhost:5432. Docker Compose also runs SeaweedFS on loopback port 9000; frontend/backend production images remain pending. Production storage and deployment remain undecided.
 
 Development login may use a real Firebase development project, the Firebase Auth emulator, or both. Emulator tests simulate identities and do not prove genuine Google sign-in works. Production credentials and data stay separate from development.
 

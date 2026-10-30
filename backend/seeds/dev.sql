@@ -8,28 +8,28 @@ INSERT INTO users (id, firebase_uid, display_name) VALUES
     ('00000000-0000-4000-8000-000000000004', 'seed-user-drew', 'Drew Demo')
 ON CONFLICT (firebase_uid) DO NOTHING;
 
--- Fictional leaderboard profiles. Insert only: reruns preserve edited names/photos.
-INSERT INTO users (id, firebase_uid, display_name, profile_photo_key) VALUES
-    ('00000000-0000-4000-8000-000000000201', 'seed-player-201', 'Adi Demo', 'profiles/coral.svg'),
-    ('00000000-0000-4000-8000-000000000202', 'seed-player-202', 'Bella Demo', 'profiles/sage.svg'),
-    ('00000000-0000-4000-8000-000000000203', 'seed-player-203', 'Citra Demo', 'profiles/blue.svg'),
-    ('00000000-0000-4000-8000-000000000204', 'seed-player-204', 'Dani Demo', NULL),
-    ('00000000-0000-4000-8000-000000000205', 'seed-player-205', 'Eka Demo', 'profiles/missing.svg'),
-    ('00000000-0000-4000-8000-000000000206', 'seed-player-206', 'Farah Demo', 'profiles/blue.svg'),
-    ('00000000-0000-4000-8000-000000000207', 'seed-player-207', 'Gilang Demo', 'profiles/coral.svg'),
-    ('00000000-0000-4000-8000-000000000208', 'seed-player-208', 'Hana Demo', NULL),
-    ('00000000-0000-4000-8000-000000000209', 'seed-player-209', 'Indra Demo', 'profiles/blue.svg'),
-    ('00000000-0000-4000-8000-000000000210', 'seed-player-210', 'Jihan Demo', 'profiles/coral.svg'),
-    ('00000000-0000-4000-8000-000000000211', 'seed-player-211', 'Kiki Demo', 'profiles/sage.svg'),
-    ('00000000-0000-4000-8000-000000000212', 'seed-player-212', 'Laras Demo', NULL),
-    ('00000000-0000-4000-8000-000000000213', 'seed-player-213', 'Miko Demo', 'profiles/coral.svg'),
-    ('00000000-0000-4000-8000-000000000214', 'seed-player-214', 'Nina Demo', 'profiles/sage.svg'),
-    ('00000000-0000-4000-8000-000000000215', 'seed-player-215', 'Oki Demo', 'profiles/blue.svg'),
-    ('00000000-0000-4000-8000-000000000216', 'seed-player-216', 'Putri Demo', NULL),
-    ('00000000-0000-4000-8000-000000000217', 'seed-player-217', 'Rafi Demo', 'profiles/sage.svg'),
-    ('00000000-0000-4000-8000-000000000218', 'seed-player-218', 'Sari Demo', 'profiles/blue.svg'),
-    ('00000000-0000-4000-8000-000000000219', 'seed-player-219', 'Tono Demo', 'profiles/coral.svg'),
-    ('00000000-0000-4000-8000-000000000220', 'seed-player-220', 'Vina Demo', NULL)
+-- Fictional leaderboard profiles. Insert only: reruns preserve edited names.
+INSERT INTO users (id, firebase_uid, display_name) VALUES
+    ('00000000-0000-4000-8000-000000000201', 'seed-player-201', 'Adi Demo'),
+    ('00000000-0000-4000-8000-000000000202', 'seed-player-202', 'Bella Demo'),
+    ('00000000-0000-4000-8000-000000000203', 'seed-player-203', 'Citra Demo'),
+    ('00000000-0000-4000-8000-000000000204', 'seed-player-204', 'Dani Demo'),
+    ('00000000-0000-4000-8000-000000000205', 'seed-player-205', 'Eka Demo'),
+    ('00000000-0000-4000-8000-000000000206', 'seed-player-206', 'Farah Demo'),
+    ('00000000-0000-4000-8000-000000000207', 'seed-player-207', 'Gilang Demo'),
+    ('00000000-0000-4000-8000-000000000208', 'seed-player-208', 'Hana Demo'),
+    ('00000000-0000-4000-8000-000000000209', 'seed-player-209', 'Indra Demo'),
+    ('00000000-0000-4000-8000-000000000210', 'seed-player-210', 'Jihan Demo'),
+    ('00000000-0000-4000-8000-000000000211', 'seed-player-211', 'Kiki Demo'),
+    ('00000000-0000-4000-8000-000000000212', 'seed-player-212', 'Laras Demo'),
+    ('00000000-0000-4000-8000-000000000213', 'seed-player-213', 'Miko Demo'),
+    ('00000000-0000-4000-8000-000000000214', 'seed-player-214', 'Nina Demo'),
+    ('00000000-0000-4000-8000-000000000215', 'seed-player-215', 'Oki Demo'),
+    ('00000000-0000-4000-8000-000000000216', 'seed-player-216', 'Putri Demo'),
+    ('00000000-0000-4000-8000-000000000217', 'seed-player-217', 'Rafi Demo'),
+    ('00000000-0000-4000-8000-000000000218', 'seed-player-218', 'Sari Demo'),
+    ('00000000-0000-4000-8000-000000000219', 'seed-player-219', 'Tono Demo'),
+    ('00000000-0000-4000-8000-000000000220', 'seed-player-220', 'Vina Demo')
 ON CONFLICT (firebase_uid) DO NOTHING;
 
 -- Snapshot ratings: local demo match results do not update these records.

@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/BX-Research/ngadu-monorepo/backend/app/types"
 	"github.com/gofiber/fiber/v3"
-	"strings"
 	"time"
 )
 
@@ -31,8 +30,8 @@ func GetLeaderboard(db LeaderboardReader, photos PhotoSigner) fiber.Handler {
 		for i := range result.Players {
 			p := &result.Players[i]
 			p.PhotoURL = nil
-			if photos != nil && strings.TrimSpace(p.PhotoKey) != "" {
-				if url, err := photos.PhotoURL(ctx, p.PhotoKey); err == nil && url != "" {
+			if photos != nil {
+				if url, err := photos.PhotoURL(ctx, p.UserID); err == nil && url != "" {
 					p.PhotoURL = &url
 				}
 			}
