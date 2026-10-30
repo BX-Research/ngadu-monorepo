@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import AppSidebar from "../../components/AppSidebar";
+import AppNavigation from "../../components/AppNavigation";
+import AppHeader from "../../components/AppHeader";
 import SportsIllustration from "../../components/SportsIllustration";
 import { createDemoMatch, DEMO_PLAYERS, type DemoPlayer, type MatchFormat } from "../../lib/demoMatches";
 
@@ -32,7 +33,7 @@ export default function NewMatchRoute() {
     router.push(`/matches/${match.id}`);
   }
 
-  return <main className="app-shell"><AppSidebar/><section className="main-area"><header className="topbar"><div className="crumb">Workspace <span>/</span> Matches <span>/</span> New match</div><div className="top-actions"><span className="leader-season">🏸 Let’s play</span></div></header><div className="content new-match-route">
+  return <main className="app-shell"><AppNavigation/><section className="main-area"><AppHeader/><div className="content new-match-route">
     <section className="new-match-hero"><div><span className="hero-kicker">🏸 &nbsp;READY, SET, PLAY!</span><h1>Set up your<br/>next match.</h1><p>Choose your format and players. You’ll enter the score on the match page right after.</p></div><SportsIllustration/></section>
     <form className="new-match-card" onSubmit={submit}>
       <div className="new-match-card-head"><div><span className="eyebrow">MATCH SETUP</span><h2>Who’s playing?</h2><p>Pick singles or doubles, then choose the registered players.</p></div><span className="setup-icon">🏸</span></div>

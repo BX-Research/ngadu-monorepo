@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Suspense, useState, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
-import AppSidebar from "../../components/AppSidebar";
+import AppNavigation from "../../components/AppNavigation";
+import AppHeader from "../../components/AppHeader";
 import ProfilePortrait from "../../components/ProfilePortrait";
 import { demoMatchesSnapshot, parseDemoMatchesSnapshot, subscribeDemoMatches, submitDemoMatchResult } from "../../lib/demoMatches";
 
@@ -35,7 +36,7 @@ function MatchDetailContent() {
   const opponents = match?.players.opponents ?? [];
   const createdAt = match ? new Date(match.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) : "";
 
-  return <main className="app-shell"><AppSidebar/><section className="main-area"><header className="topbar"><div className="crumb">Workspace <span>/</span> <Link href="/matches">Matches</Link> <span>/</span> Match detail</div><div className="top-actions"><span className="leader-season">🏸 {match?.format ?? "Match"}</span></div></header><div className="content match-detail-route">
+  return <main className="app-shell"><AppNavigation/><section className="main-area"><AppHeader/><div className="content match-detail-route">
     {!loaded ? <section className="new-match-card"><p>Loading match…</p></section> : !match ? <section className="new-match-card"><h1>Match tidak ditemukan</h1><p>Match demo ini mungkin dibuat di browser atau perangkat lain.</p><Link className="primary-button" href="/matches">Kembali ke matches</Link></section> : <>
       <section className="new-match-hero"><div><span className="hero-kicker">🏸 &nbsp;{match.status === "completed" ? "MATCH COMPLETED" : "MATCH IN PROGRESS"}</span><h1>{match.status === "completed" ? "Good game!" : "Enter your score."}</h1><p>{match.sport} · {match.format} · dibuat {createdAt}</p></div><span className="match-detail-art">🏸<b>✨</b></span></section>
       <section className="match-detail-card"><div className="new-match-card-head"><div><span className="eyebrow">MATCH RESULT</span><h2>Who played?</h2><p>Pastikan tim dan skor yang dimasukkan sesuai hasil permainan.</p></div><span className="setup-icon">🏆</span></div>

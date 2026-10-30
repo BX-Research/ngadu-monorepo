@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import AppSidebar from "../components/AppSidebar";
+import AppNavigation from "../components/AppNavigation";
+import AppHeader from "../components/AppHeader";
 import ProfilePortrait from "../components/ProfilePortrait";
 import SportsIllustration from "../components/SportsIllustration";
 import { demoMatchesSnapshot, parseDemoMatchesSnapshot, subscribeDemoMatches, type DemoMatch } from "../lib/demoMatches";
@@ -27,7 +28,7 @@ export default function MatchesRoute() {
   const wonCount = sampleMatches.filter((match) => match.won).length + completed.filter((match) => match.won).length;
   const winRate = playedCount ? Math.round((wonCount / playedCount) * 100) : 0;
 
-  return <main className="app-shell"><AppSidebar/><section className="main-area"><header className="topbar"><div className="crumb">Workspace <span>/</span> Matches</div><div className="top-actions"><span className="leader-season">📒 My court journal</span></div></header><div className="content matches-route">
+  return <main className="app-shell"><AppNavigation/><section className="main-area"><AppHeader/><div className="content matches-route">
     <section className="matches-hero"><div><span className="hero-kicker">🏸 &nbsp;YOUR COURT JOURNAL</span><h1>Every match<br/>has a story.</h1><p>Your rallies, results, and little rating victories—all in one place.</p><Link className="primary-button" href="/matches/new"><span>＋</span> Record a match</Link></div><div className="matches-hero-art"><SportsIllustration/><span>Nice rally! ✨</span></div></section>
     <div className="match-summary"><article><span>PLAYED</span><strong>{playedCount.toString().padStart(2, "0")}</strong><small>completed matches</small></article><article><span>WON</span><strong>{wonCount.toString().padStart(2, "0")}</strong><small>keep up the rallies!</small></article><article><span>WIN RATE</span><strong>{winRate}%</strong><small>demo stats</small></article></div>
     <section className="history-route-list"><div className="history-route-head"><div><h2>Match history</h2><p>Latest first · demo results</p></div><span>🏆 &nbsp;Your highlights</span></div>
