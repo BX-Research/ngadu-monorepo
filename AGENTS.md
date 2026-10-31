@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-This monorepo contains Ngadu, a badminton matchmaking app for a community of friends. Read `docs/functional-spec.md` before changing product behavior. Distinguish confirmed decisions from proposed features and open choices.
+This monorepo contains Ngadu, a badminton matchmaking app for friends. Read `docs/functional-spec.md` before changing product behavior. Distinguish confirmed decisions from proposed features and open choices.
 
 ## Layout
 
@@ -12,11 +12,11 @@ This monorepo contains Ngadu, a badminton matchmaking app for a community of fri
 
 ## Confirmed architecture
 
-Next.js runs on Bun. A separate Go backend using Fiber v3 will verify Firebase Authentication ID tokens, enforce community permissions, query PostgreSQL, and handle SeaweedFS uploads if uploads are included. Firebase provides Google login; it does not require Firestore. SeaweedFS is selected for development. Docker Compose runs local PostgreSQL; `make dev` starts the database container and runs Next.js and Go locally. SeaweedFS orchestration is pending. Production hosting and storage remain undecided.
+Next.js runs on Bun. A separate Go backend using Fiber v3 will verify Firebase Authentication ID tokens, enforce application permissions, query PostgreSQL, and handle SeaweedFS uploads if uploads are included. Firebase provides Google login; it does not require Firestore. SeaweedFS is selected for development. Docker Compose runs local PostgreSQL; `make dev` starts the database container and runs Next.js and Go locally. SeaweedFS orchestration is pending. Production hosting and storage remain undecided.
 
 ## Development commands
 
-The root Makefile provides shared shortcuts. `make install` downloads dependencies for both services and enables hooks; `make dev` starts Docker PostgreSQL, waits for database health, migrates and seeds it, then runs the Go server and frontend locally; `make seed` starts, migrates, and seeds that same local Docker database. Goose is a Go library invoked by `backend/scripts/migrate`; `make db-migrate`, `make db-status`, and `make db-revision msg=NAME` manage SQL migrations. All Make service/database targets are local development only. Root `.env` or shell variables configure the local stack; service, migration, and seed commands construct their own local database URL from `DEV_DB_*`, ignoring ambient `DATABASE_URL`. `make check` runs frontend lint/typecheck/build, then Go tests and vet. `make help` lists targets. Install GNU Make, Bun, Go, and Docker with Compose separately. Never run seed commands against production databases.
+The root Makefile provides shared shortcuts. `make install` downloads dependencies for both services and enables hooks; `make dev` starts Docker PostgreSQL, waits for database health, migrates and seeds it, then runs the Go server and frontend locally; `make seed` starts, migrates, and seeds that same local Docker database. Goose is a Go library invoked by `backend/scripts/migrate`; `make db-migrate`, `make db-status`, and `make db-revision msg=NAME` manage SQL migrations. All Make service/database targets are local development only. `make dev` prepares local `S3_ENDPOINT_HOST`/`S3_ENDPOINT_URL` values in root `.env`, preserving unrelated settings and existing credentials. Root `.env` or shell variables configure the local stack; service, migration, and seed commands construct their own local database URL from `DEV_DB_*`, ignoring ambient `DATABASE_URL`. `make check` runs frontend lint/typecheck/build, then Go tests and vet. `make help` lists targets. Install GNU Make, Bun, Go, and Docker with Compose separately. Never run seed commands against production databases.
 
 Existing Bun commands, from the repository root:
 

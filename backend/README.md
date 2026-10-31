@@ -9,7 +9,7 @@ Run `make test-backend` and `make vet-backend` from the root to check Go code.
 SQL fixtures in `seeds/dev.sql` populate PostgreSQL through Docker’s `psql`; see [scripts/README.md](scripts/README.md) for setup,
 usage, and checks. The seed does not implement login.
 
-Expected responsibilities include verifying Firebase ID tokens, enforcing community permissions, managing sessions and pairings, querying PostgreSQL, and handling uploads through SeaweedFS if uploads are selected.
+Expected responsibilities include verifying Firebase ID tokens, enforcing application permissions, managing sessions and pairings, querying PostgreSQL, and handling uploads through SeaweedFS if uploads are selected.
 
 See [the functional specification](../docs/functional-spec.md) and [repository instructions](../AGENTS.md).
 
@@ -17,7 +17,7 @@ See [the functional specification](../docs/functional-spec.md) and [repository i
 
 `GET /api/users/{id}` looks up the application UUID in PostgreSQL using a
 parameterized query and returns `id`, `firebase_uid`, `display_name`, and
-`created_at` (an RFC 3339 timestamp). No membership information is included.
+`created_at` (an RFC 3339 timestamp). No authorization information is included.
 
 ```bash
 make db-seed
@@ -30,4 +30,81 @@ Responses are JSON: 200 for a user, 400 for an invalid UUID, 404 when no user
 matches, and 503 when the database lookup fails. Errors use an `error` field
 without connection details. Requests have a three-second database timeout.
 This endpoint is for local inspection; it has no Firebase authentication or
-community authorization and must gain those checks before product use.
+application authorization and must gain those checks before product use.
+
+## Leaderboard (local development)
+
+The fictional leaderboard is available by default, including direct Go startup.
+The backend binds to loopback. Production
+use requires an explicit authentication and application-permission policy.
+
+`GET /api/leaderboard` returns:
+
+```json
+{
+  "total_players": 24,
+  "players": [
+    { "rank": 1, "user_id": "00000000-0000-4000-8000-000000000201", "display_name": "Adi Demo", "rating": 1750, "wins": 30, "losses": 5, "photo_url": null }
+  ]
+}
+```
+
+The example shows one row; responses contain up to 10. `photo_url` is either a
+15-minute signed private S3 URL or null. Object keys and storage credentials are
+not returned. No bucket listing or per-player object checks occur during reads.
+Missing objects fall back in the browser; invalid storage configuration yields
+null URLs without failing the leaderboard.
+
+Ranks are sequential, ordered by rating descending then user UUID ascending.
+Count and list use a single database statement. Each request queries stored
+rating snapshots with a three-second timeout and `Cache-Control: no-store`.
+Empty standings return 200 with an empty array; database failure returns 503
+without internal error details. Each player has one global rating record.
+The dashboard and browser-local demo matches do not update these ratings.
+
+The Next.js endpoint `/api/leaderboard` forwards only this fixed operation to a
+loopback backend, using server-only `NGADU_BACKEND_ORIGIN` (default
+`http://127.0.0.1:8080`). Set optional overrides in
+the shell running Next.js, or in its local environment file; root `.env` loading
+is owned by the Go utilities/Compose. Never use `NEXT_PUBLIC_` for credentials.
+
+See the [seed guide](scripts/README.md) for deterministic fixtures and storage
+commands. S3 clients use the SDK's [custom endpoint support](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-endpoints.html).
+
+## Configuration and dependency injection
+
+`app/main.go` delegates to `server.Run`. The startup composition root in
+`app/server/run.go` loads `config.Config`, opens the database and S3 client, and
+injects the user lookup, leaderboard reader, photo signer, and readiness check
+into `server.New(Dependencies)`. The HTTP constructor does not read environment
+variables or create concrete clients; tests inject alternatives directly.
+Missing or invalid S3 configuration injects no photo signer, leaving standings
+available with placeholder photos. Only the development seeder enforces local
+storage; application clients may use an explicitly configured S3 endpoint.
+
+S3 configuration uses `S3_ENDPOINT_HOST`, `S3_ENDPOINT_URL`, `S3_BUCKET`,
+`S3_REGION`, `S3_ACCESS_KEY`, and `S3_SECRET_KEY`. The host must match the URL's
+hostname when supplied. `make dev` prepares `localhost` and
+`http://localhost:9000` in root `.env` before starting services. `S3_PORT` selects
+an alternative local port for isolated setups. `make dev-env` runs only this
+preparation. Existing unrelated settings and S3 credentials are retained.
+
+## Avatar normalization pipeline
+
+Avatar objects use `avatars/{userId}.jpg`; the UUID is canonicalized and validated
+by a shared helper. The leaderboard derives this key for each player instead of
+reading `profile_photo_key`. An absent object still falls back to the frontend's
+SVG placeholder. Signed reads do not perform a per-player existence lookup.
+
+`avatars.New(writer).Upload(ctx, userID, reader)` accepts an injected
+`avatars.Writer`. `storage.Store` implements it with a private S3 upload. The
+pipeline decodes JPEG/PNG/GIF/WebP input, checks a 10 MiB byte limit and a
+25-million-pixel limit before full decode, corrects JPEG EXIF orientation,
+center-crops/resizes to 512×512, flattens transparency onto white, and encodes
+JPEG at quality 85. GIF inputs use the first frame; animated WebP is unsupported; unsupported
+formats including SVG are rejected. Re-encoding omits source metadata.
+
+Uploads replace the same deterministic key with `Content-Type: image/jpeg` and
+`Cache-Control: private, no-cache` so fixed-key replacements can be revalidated.
+The caller must supply the authorized user ID. This is the backend pipeline
+only: no HTTP upload endpoint, upload UI, or authentication bypass is included.
