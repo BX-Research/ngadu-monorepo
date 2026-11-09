@@ -31,13 +31,13 @@ Firebase manages login identities. PostgreSQL stores application data linked to 
 
 | Directory | Purpose | Current state |
 | --- | --- | --- |
-| frontend | Frontend with its own package manifest and Bun lockfile | Database-backed local leaderboard; dashboard/matches remain demo flows |
+| frontend | Frontend with its own package manifest and Bun lockfile | Database-backed local leaderboard; dashboard summary and read-only profiles use its top 10; match flows remain demo |
 | backend | Separate Go backend | Health/readiness server, local user lookup, and development seeder; protected application endpoints pending |
 | docs | Functional specification | Maintained in Markdown |
 
 Root Bun scripts delegate to the frontend; the Makefile also provides Go and local database commands. Each service keeps its own toolchain. Sharing one repository does not require a JavaScript workspace or an extra build orchestrator.
 
-The Go backend provides operational health/readiness endpoints. Goose SQL migrations define the current minimal schema. A separate development seeder inserts fixture data. Migrations run through a Go program under backend/scripts; no standalone Goose installation is required. Development fixtures live in backend/seeds/dev.sql and run through psql inside the local Compose database container. Docker Compose runs local PostgreSQL. A local development GET /api/users/{id} endpoint queries a user by application UUID and returns id, firebase_uid, display_name, and created_at. It returns 400 for invalid UUIDs, 404 for missing users, and 503 for database failures. This inspection endpoint has no authentication or application authorization checks; Firebase integration and protected application API endpoints remain unimplemented; the dashboard and match pages use demo data. A local-only leaderboard now reads seeded PostgreSQL ratings and private SeaweedFS S3 photos through Go and a same-origin Next.js proxy. The following sections describe proposed application behavior.
+The Go backend provides operational health/readiness endpoints. Goose SQL migrations define the current minimal schema. A separate development seeder inserts fixture data. Migrations run through a Go program under backend/scripts; no standalone Goose installation is required. Development fixtures live in backend/seeds/dev.sql and run through psql inside the local Compose database container. Docker Compose runs local PostgreSQL. A local development GET /api/users/{id} endpoint queries a user by application UUID and returns id, firebase_uid, display_name, and created_at. It returns 400 for invalid UUIDs, 404 for missing users, and 503 for database failures. This inspection endpoint has no authentication or application authorization checks; Firebase integration and protected application API endpoints remain unimplemented; match pages still use demo data. A local-only leaderboard now reads seeded PostgreSQL ratings and private SeaweedFS S3 photos through Go and a same-origin Next.js proxy. The dashboard now shows a summary and the first five players from this local-only leaderboard; linked read-only profiles use only the returned top-ten data. Match creation, results, and match history remain browser-local demos. The following sections describe proposed application behavior.
 
 ## 4. Proposed first release
 
@@ -119,8 +119,11 @@ reconstructed by rollback. Historical migrations remain unchanged.
 The current local read API has no authentication. Firebase verification and
 application permissions for future protected operations remain unimplemented.
 Seasons, separate match-format ladders, score-driven rating updates, upload APIs/UI,
-and dashboard/match-page integration remain outside this implementation. Demo
-match results in browser storage do not update global ratings.
+and match-page integration remain outside this implementation. The dashboard and
+read-only player profiles consume the local leaderboard only; demo match results
+in browser storage do not update global ratings. Profiles currently work only for
+players included in the leaderboard response's top ten; a public individual-player
+endpoint is still needed for other players.
 
 ## 8. Sessions and participation
 
@@ -203,7 +206,7 @@ The API distinguishes unauthenticated requests, denied access, invalid input, mi
 
 ## 13. Development and deployment
 
-`make dev` starts PostgreSQL through Docker Compose, waits for database health, applies migrations and seeds development fixtures, then runs the backend and Next.js concurrently through Make. The shell recipe waits for both processes; if one app exits, the other remains running until stopped. Ctrl+C stops both app processes; PostgreSQL can be stopped separately with `make db-stop`. Its named volume persists across ordinary stops and restarts. `make seed` migrates and seeds the local development database and initializes private S3 photo fixtures; `make db-seed` runs only the database steps. `make db-migrate` applies migrations, `make db-status` shows migration status, and `make db-revision msg=NAME` creates a SQL template. All Make service/database commands target local development and ignore ambient DATABASE_URL. Root `.env` or shell variables configure development database credentials. Next.js uses its default port 3000, the Go backend listens on localhost:8080, and PostgreSQL listens on localhost:5432. Docker Compose also runs SeaweedFS on loopback port 9000; frontend/backend production images remain pending. Production storage and deployment remain undecided.
+`make dev` starts PostgreSQL through Docker Compose, waits for database health, applies migrations and seeds development fixtures, then runs the backend and Next.js concurrently through Make. The shell recipe waits for both processes; if one app exits, the other remains running until stopped. Ctrl+C stops both app processes; PostgreSQL can be stopped separately with `make db-stop`. Its named volume persists across ordinary stops and restarts. `make seed` migrates and seeds the local development database and initializes private S3 photo fixtures; `make db-seed` runs only the database steps. `make db-migrate` applies migrations, `make db-status` shows migration status, and `make db-revision msg=NAME` creates a SQL template. All Make service/database commands target local development and ignore ambient DATABASE_URL. Root `.env` or shell variables configure development database credentials. Next.js uses its default port 3000, the Go backend listens on localhost:8080, and PostgreSQL defaults to localhost:5433 (`DEV_DB_PORT` can override it). Docker Compose also runs SeaweedFS on loopback port 9000; frontend/backend production images remain pending. Production storage and deployment remain undecided.
 
 Development login may use a real Firebase development project, the Firebase Auth emulator, or both. Emulator tests simulate identities and do not prove genuine Google sign-in works. Production credentials and data stay separate from development.
 

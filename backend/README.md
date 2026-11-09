@@ -2,7 +2,7 @@
 
 A minimal Go server uses Fiber v3 for `GET /healthz` (liveness) and `GET /readyz` (PostgreSQL connectivity). A local development user lookup is available; Firebase token verification and protected product APIs are not implemented yet. The readiness check uses `pgx`; Fiber is the selected HTTP framework; the full API database-access design remains undecided.
 
-Run `make dev` from the repository root to start local Docker PostgreSQL, this backend, and the frontend. The server listens on localhost port 8080. Root `.env` settings are described in [.env.example](../.env.example). Install Air as described in the [root README](../README.md#common-commands). Standalone startup uses `air` from this directory; `.air.toml` builds `./app` and reloads the server after Go edits. For startup without live reload, use `go run ./app`. Direct startup loads root `.env` without overriding shell variables and requires `DATABASE_URL`. Make startup supplies a local URL from required `DEV_DB_USER`, `DEV_DB_PASSWORD`, and `DEV_DB_NAME`, overriding any other `DATABASE_URL` for that process without editing `.env`. No database credentials have fallback values. The server binds to localhost:8080. PostgreSQL uses localhost:5432.
+Run `make dev` from the repository root to start local Docker PostgreSQL, this backend, and the frontend. The server listens on localhost port 8080. Root `.env` settings are described in [.env.example](../.env.example). Install Air as described in the [root README](../README.md#common-commands). Standalone startup uses `air` from this directory; `.air.toml` builds `./app` and reloads the server after Go edits. For startup without live reload, use `go run ./app`. Direct startup loads root `.env` without overriding shell variables and requires `DATABASE_URL`. Make startup supplies a local URL from required `DEV_DB_USER`, `DEV_DB_PASSWORD`, and `DEV_DB_NAME`, overriding any other `DATABASE_URL` for that process without editing `.env`. No database credentials have fallback values. The server binds to localhost:8080. PostgreSQL uses localhost:5433 by default (`DEV_DB_PORT` can override it).
 
 Run `make test-backend` and `make vet-backend` from the root to check Go code.
 
@@ -67,6 +67,10 @@ loopback backend, using server-only `NGADU_BACKEND_ORIGIN` (default
 `http://127.0.0.1:8080`). Set optional overrides in
 the shell running Next.js, or in its local environment file; root `.env` loading
 is owned by the Go utilities/Compose. Never use `NEXT_PUBLIC_` for credentials.
+
+A read-only single-player profile endpoint is not implemented yet. Its proposed
+request and response contract is documented in
+[Player profile API contract](../docs/api-contracts/player-profile.md).
 
 See the [seed guide](scripts/README.md) for deterministic fixtures and storage
 commands. S3 clients use the SDK's [custom endpoint support](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-endpoints.html).

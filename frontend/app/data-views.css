@@ -1,0 +1,27 @@
+.dashboard-ladder { margin-top: 20px; }
+.dashboard-ranking-row, .profile-link { color: inherit; text-decoration: none; }
+.dashboard-ranking-row:hover, .profile-link:hover { background: #f4f7e8; }
+.dashboard-ranking-row:focus-visible, .profile-link:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.dashboard-ranking-row .ranking-player > span:last-child { display: grid; min-width: 0; }
+
+.player-profile-route { max-width: 720px; }
+.player-profile-route > .text-button { margin-bottom: 12px; }
+.player-profile-route > .eyebrow { margin: 8px 0 12px; }
+.player-profile-card { padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: #fffefb; }
+.player-profile-identity { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.player-profile-photo { width: 86px; height: 86px; flex: 0 0 auto; border: 3px solid #e2f47a; border-radius: 50%; object-fit: cover; }
+.player-profile-identity h1 { margin: 10px 0 5px; font-size: 25px; overflow-wrap: anywhere; }
+.player-profile-identity p { margin: 0; color: var(--muted); font-size: 12px; }
+.player-profile-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 22px; }
+.player-profile-stats article { display: grid; gap: 4px; padding: 12px; border-radius: 11px; background: #f6f5ee; }
+.player-profile-stats article > span { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .8px; }
+.player-profile-stats strong { font-size: 22px; }
+.player-profile-stats small { color: var(--muted); font-size: 10px; }
+@media (max-width: 380px) {
+  .player-profile-card { padding: 14px; }
+  .player-profile-identity { gap: 11px; }
+  .player-profile-photo { width: 68px; height: 68px; }
+  .player-profile-identity h1 { font-size: 21px; }
+  .player-profile-stats article { padding: 9px; }
+  .player-profile-stats strong { font-size: 19px; }
+}

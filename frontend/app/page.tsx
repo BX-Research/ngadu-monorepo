@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import AppNavigation from "./components/AppNavigation";
 import AppHeader from "./components/AppHeader";
 import ProfilePortrait from "./components/ProfilePortrait";
-import { demoMatchesSnapshot, DEMO_PLAYERS, getDemoStandings, parseDemoMatchesSnapshot, subscribeDemoMatches, type DemoMatch } from "./lib/demoMatches";
+import ProfilePhoto from "./components/ProfilePhoto";
+import { demoMatchesSnapshot, DEMO_PLAYERS, parseDemoMatchesSnapshot, subscribeDemoMatches, type DemoMatch } from "./lib/demoMatches";
+import { loadLeaderboard, type Leaderboard } from "./lib/leaderboard";
+
+type LeaderboardState = { status: "loading" } | { status: "error" } | { status: "ready"; data: Leaderboard };
 
 type Match = { id: string | number; sport: string; format: string; opponent: string; ally?: string; opponentRating: number | string; date: string; status: "upcoming" | "completed"; score?: [number, number]; won?: boolean; change?: number };
 
@@ -17,6 +21,17 @@ const initialMatches: Match[] = [
 
 export default function Home() {
   const snapshot = useSyncExternalStore(subscribeDemoMatches, demoMatchesSnapshot, () => null);
+  const [leaderboardState, setLeaderboardState] = useState<LeaderboardState>({ status: "loading" });
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadLeaderboard(controller.signal).then((data) => {
+      if (!controller.signal.aborted) setLeaderboardState({ status: "ready", data });
+    }).catch(() => {
+      if (!controller.signal.aborted) setLeaderboardState({ status: "error" });
+    });
+    return () => controller.abort();
+  }, [attempt]);
   const createdMatches = parseDemoMatchesSnapshot(snapshot ?? "[]");
   const liveMatches: Match[] = createdMatches.map((match: DemoMatch) => ({
     id: match.id,
@@ -31,46 +46,59 @@ export default function Home() {
     change: match.ratingChange,
   }));
   const matches = [...liveMatches, ...initialMatches];
-  const standings = getDemoStandings(createdMatches);
-  const currentPlayer = standings.find((player) => player.id === DEMO_PLAYERS[0].id) ?? DEMO_PLAYERS[0];
-  const playedMatches = matches.filter((match) => match.status === "completed");
-  const winRate = playedMatches.length ? Math.round(playedMatches.filter((match) => match.won).length / playedMatches.length * 100) : 0;
-  const lastCompleted = playedMatches[0];
-  const lastChange = lastCompleted?.change ?? 0;
+  const leaderboard = leaderboardState.status === "ready" ? leaderboardState.data : null;
+  const topPlayer = leaderboard?.players[0];
+  const highlights = leaderboard?.players.slice(0, 5) ?? [];
 
   return (
     <main className="app-shell">
       <AppNavigation />
       <section className="main-area">
-        <AppHeader />
+        <AppHeader neutral />
         <div className="content overview-route">
           <div className="welcome">
-            <p className="eyebrow">BADMINTON</p>
-            <h1>Your game,<br />your ranking.</h1>
-            <p className="subhead">Play with friends. Keep getting better.</p>
+            <p className="eyebrow">BADMINTON · GLOBAL LADDER</p>
+            <h1>Your game,<br />your community.</h1>
+            <p className="subhead">Explore the current local-development standings.</p>
           </div>
 
-          <div className="stat-grid">
+          <div className="stat-grid" aria-label="Global leaderboard summary">
             <article className="stat-card rating-card">
-              <div className="stat-top">YOUR ELO RATING <span className="rating-badge">Demo rating</span></div>
-              <div className="rating-value">{currentPlayer.elo.toLocaleString()}<span>pts</span></div>
-              <p className="rating-change">{lastChange > 0 ? "+" : ""}{lastChange} last match</p>
-              <svg className="rating-chart" viewBox="0 0 120 55" fill="none" aria-hidden="true"><path d="M2 50 18 38 31 40 45 26 59 29 73 16 88 20 104 8 117 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="117" cy="4" r="3" fill="currentColor"/></svg>
+              <div className="stat-top">TOP GLOBAL RATING <span className="rating-badge">{topPlayer ? `#1 · ${topPlayer.display_name}` : "Leaderboard"}</span></div>
+              <div className="rating-value">{topPlayer ? topPlayer.rating.toLocaleString() : "—"}<span>ELO</span></div>
+              <p className="rating-change">{topPlayer ? `${topPlayer.wins} wins · ${topPlayer.losses} losses` : "Current leader"}</p>
             </article>
             <article className="stat-card">
-              <h2>Matches played</h2>
-              <div className="stat-number">{playedMatches.length}</div>
+              <h2>Ranked players</h2>
+              <div className="stat-number">{leaderboard ? leaderboard.total_players : "—"}</div>
             </article>
             <article className="stat-card">
-              <h2>Win rate</h2>
-              <div className="stat-number">{winRate}<span>%</span></div>
+              <h2>Players shown</h2>
+              <div className="stat-number">{leaderboard ? leaderboard.players.length : "—"}<span>/10</span></div>
             </article>
           </div>
 
           <Link className="primary-button create-match-button" href="/matches/new"><span aria-hidden="true">+</span> Create a match</Link>
+          <section className="full-rankings dashboard-ladder" aria-labelledby="dashboard-ladder-title">
+            <div className="full-rankings-head">
+              <div><h2 id="dashboard-ladder-title">Global leaderboard</h2><p>Players ranked by their current rating.</p></div>
+              <Link className="text-button" href="/leaderboard">View all <span aria-hidden="true">→</span></Link>
+            </div>
+            {leaderboardState.status === "loading" && <p className="leaderboard-state" role="status">Loading standings…</p>}
+            {leaderboardState.status === "error" && <div className="leaderboard-state" role="alert"><p>Standings are unavailable. Try again.</p><button className="primary-button" onClick={() => { setLeaderboardState({ status: "loading" }); setAttempt((value) => value + 1); }}>Retry</button></div>}
+            {leaderboard && leaderboard.players.length === 0 && <p className="leaderboard-state">No ranked players yet.</p>}
+            {highlights.map((player) => (
+              <Link className="ranking-row dashboard-ranking-row" href={`/players/${encodeURIComponent(player.user_id)}`} key={player.user_id} aria-label={`View ${player.display_name}'s read-only profile`}>
+                <span className={`rank-number ${player.rank <= 3 ? `rank-medal rank-medal-${player.rank}` : ""}`}>{player.rank <= 3 ? ["🥇", "🥈", "🥉"][player.rank - 1] : String(player.rank).padStart(2, "0")}</span>
+                <span className="ranking-player"><ProfilePhoto className="ranking-photo" photoUrl={player.photo_url} name={player.display_name} /><span><strong>{player.display_name}</strong><small>{player.wins} wins · {player.losses} losses</small></span></span>
+                <strong className="ranking-elo">{player.rating.toLocaleString()} <small>ELO</small></strong>
+              </Link>
+            ))}
+          </section>
+
           <div className="section-heading">
-            <h2>Recent matches</h2>
-            <Link className="text-button" href="/matches">View all <span aria-hidden="true">→</span></Link>
+            <h2>Recent demo matches</h2>
+            <Link className="text-button" href="/matches">View matches <span aria-hidden="true">→</span></Link>
           </div>
           <div className="recent-matches">
             {matches.map((match) => (
@@ -98,7 +126,7 @@ export default function Home() {
               </article>
             ))}
           </div>
-          <p className="demo-note">Demo data · matches are saved in this browser.</p>
+          <p className="demo-note">Match activity above is sample/local-browser data and is not connected to the backend.</p>
           <footer>© 2026 Ngadu <span>Play your game. Own your rank.</span></footer>
         </div>
       </section>
