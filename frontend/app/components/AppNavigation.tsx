@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const items = [
-  { label: "Overview", href: "/", path: "m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" },
-  { label: "Leaderboard", href: "/leaderboard", path: "M8 3h8v6a4 4 0 0 1-8 0V3ZM8 5H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4m-4 1v5m-4 3h8m-6-3h4v3" },
-  { label: "Matches", href: "/matches", path: "M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" },
+  { label: "Overview", href: "/", icon: <path d="M12 2.6 2.5 10.2V21h7v-6.5h5V21h7V10.2L12 2.6Z" fill="currentColor" /> },
+  { label: "Leaderboard", href: "/leaderboard", icon: <path d="M3 14h4.5v7H3v-7Zm6.75-5h4.5v12h-4.5V9ZM16.5 3H21v18h-4.5V3Z" fill="currentColor" /> },
+  { label: "Results", href: "/matches", icon: <path d="M3 4.5h3v3H3v-3Zm5 .5h13v2H8V5Zm-5 5.5h3v3H3v-3Zm5 .5h13v2H8v-2Zm-5 5.5h3v3H3v-3Zm5 .5h13v2H8v-2Z" fill="currentColor" /> },
 ];
 
 export default function AppNavigation() {
@@ -18,7 +18,7 @@ export default function AppNavigation() {
         const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
         return (
           <Link key={item.href} href={item.href} className={`nav-item${active ? " active" : ""}`} aria-current={active ? "page" : undefined}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={item.path}/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true">{item.icon}</svg>
             {item.label}
           </Link>
         );

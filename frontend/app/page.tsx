@@ -2,106 +2,97 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import AppNavigation from "./components/AppNavigation";
-import AppHeader from "./components/AppHeader";
-import ProfilePortrait from "./components/ProfilePortrait";
-import { demoMatchesSnapshot, DEMO_PLAYERS, getDemoStandings, parseDemoMatchesSnapshot, subscribeDemoMatches, type DemoMatch } from "./lib/demoMatches";
+import AppFrame from "./components/AppFrame";
+import Scoreboard from "./components/Scoreboard";
+import { demoMatchesSnapshot, DEMO_PLAYERS, getDemoStandings, parseDemoMatchesSnapshot, subscribeDemoMatches } from "./lib/demoMatches";
+import { opponentNames, shortDate, signedPoints, teamNames } from "./lib/display";
 
-type Match = { id: string | number; sport: string; format: string; opponent: string; ally?: string; opponentRating: number | string; date: string; status: "upcoming" | "completed"; score?: [number, number]; won?: boolean; change?: number };
+type FeedItem = { id: string; players: string; score: [number, number]; date: string; href?: string };
 
-const initialMatches: Match[] = [
-  { id: 1, sport: "Badminton", format: "Singles", opponent: "Kevin Hartono", opponentRating: 1476, date: "Today · 18:30", status: "upcoming" },
-  { id: 2, sport: "Badminton", format: "Doubles", opponent: "Rizky Pratama & Dimas Putra", opponentRating: "1,512 / 1,328", date: "Tomorrow · 19:00", status: "upcoming" },
-  { id: 3, sport: "Badminton", format: "Singles", opponent: "Dimas Putra", opponentRating: 1328, date: "Oct 08 · 20:15", status: "completed", score: [21, 17], won: true, change: 18 },
+// Sample results from around the group, shown until real match history exists.
+const sampleLast = { format: "Singles", you: "You", opponent: "Dimas Putra", score: [21, 17] as [number, number], won: true, change: 18, date: "Oct 8" };
+const sampleFeed: FeedItem[] = [
+  { id: "s-1", players: "Nadia Putri vs Sarah Wijaya", score: [21, 15], date: "Oct 8" },
+  { id: "s-2", players: "Rizky Pratama vs Kevin Hartono", score: [21, 19], date: "Oct 7" },
+  { id: "s-3", players: "Kevin Hartono vs Sarah Wijaya", score: [22, 20], date: "Oct 5" },
 ];
 
 export default function Home() {
   const snapshot = useSyncExternalStore(subscribeDemoMatches, demoMatchesSnapshot, () => null);
-  const createdMatches = parseDemoMatchesSnapshot(snapshot ?? "[]");
-  const liveMatches: Match[] = createdMatches.map((match: DemoMatch) => ({
-    id: match.id,
-    sport: match.sport,
-    format: match.format,
-    opponent: match.players.opponents.map((player) => player.name).join(" & "),
-    opponentRating: match.players.opponents.map((player) => player.elo.toLocaleString()).join(" / "),
-    date: new Date(match.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit" }),
-    status: match.status === "completed" ? "completed" : "upcoming",
-    score: match.score,
-    won: match.won,
-    change: match.ratingChange,
-  }));
-  const matches = [...liveMatches, ...initialMatches];
-  const standings = getDemoStandings(createdMatches);
-  const currentPlayer = standings.find((player) => player.id === DEMO_PLAYERS[0].id) ?? DEMO_PLAYERS[0];
-  const playedMatches = matches.filter((match) => match.status === "completed");
-  const winRate = playedMatches.length ? Math.round(playedMatches.filter((match) => match.won).length / playedMatches.length * 100) : 0;
-  const lastCompleted = playedMatches[0];
-  const lastChange = lastCompleted?.change ?? 0;
+  const created = parseDemoMatchesSnapshot(snapshot ?? "[]");
+  const completed = created.filter((match) => match.status === "completed" && match.score);
+  const pending = created.filter((match) => match.status === "awaiting_result");
+  const standings = getDemoStandings(created);
+  const me = standings.find((player) => player.id === DEMO_PLAYERS[0].id) ?? DEMO_PLAYERS[0];
+
+  const latest = completed[0];
+  const last = latest
+    ? { format: latest.format, you: teamNames(latest), opponent: opponentNames(latest), score: latest.score!, won: latest.won === true, change: latest.ratingChange ?? 0, date: shortDate(latest.createdAt) }
+    : sampleLast;
+
+  const feed: FeedItem[] = [
+    ...completed.slice(latest ? 1 : 0).map((match) => ({
+      id: match.id,
+      players: `${teamNames(match)} vs ${opponentNames(match)}`,
+      score: match.score!,
+      date: shortDate(match.createdAt),
+      href: `/matches/${match.id}`,
+    })),
+    ...sampleFeed,
+  ].slice(0, 3);
 
   return (
-    <main className="app-shell">
-      <AppNavigation />
-      <section className="main-area">
-        <AppHeader />
-        <div className="content overview-route">
-          <div className="welcome">
-            <p className="eyebrow">BADMINTON</p>
-            <h1>Your game,<br />your ranking.</h1>
-            <p className="subhead">Play with friends. Keep getting better.</p>
-          </div>
+    <AppFrame>
+      <h1 className="page-title">Your last result</h1>
+      <Scoreboard
+        title={`${last.format} vs ${last.opponent}`}
+        date={last.date}
+        left={{ score: last.score[0], label: last.you }}
+        right={{ score: last.score[1], label: last.opponent }}
+        outcome={last.won ? "won" : "lost"}
+      />
 
-          <div className="stat-grid">
-            <article className="stat-card rating-card">
-              <div className="stat-top">YOUR ELO RATING <span className="rating-badge">Demo rating</span></div>
-              <div className="rating-value">{currentPlayer.elo.toLocaleString()}<span>pts</span></div>
-              <p className="rating-change">{lastChange > 0 ? "+" : ""}{lastChange} last match</p>
-              <svg className="rating-chart" viewBox="0 0 120 55" fill="none" aria-hidden="true"><path d="M2 50 18 38 31 40 45 26 59 29 73 16 88 20 104 8 117 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="117" cy="4" r="3" fill="currentColor"/></svg>
-            </article>
-            <article className="stat-card">
-              <h2>Matches played</h2>
-              <div className="stat-number">{playedMatches.length}</div>
-            </article>
-            <article className="stat-card">
-              <h2>Win rate</h2>
-              <div className="stat-number">{winRate}<span>%</span></div>
-            </article>
-          </div>
+      <div className="rating-line">
+        <span>Rating</span>
+        <strong className="numeral">{me.elo.toLocaleString("en-US")}</strong>
+        <span className={`points-chip${last.change < 0 ? " points-down" : ""}`}>{signedPoints(last.change)}</span>
+      </div>
 
-          <Link className="primary-button create-match-button" href="/matches/new"><span aria-hidden="true">+</span> Create a match</Link>
-          <div className="section-heading">
-            <h2>Recent matches</h2>
-            <Link className="text-button" href="/matches">View all <span aria-hidden="true">→</span></Link>
-          </div>
-          <div className="recent-matches">
-            {matches.map((match) => (
-              <article className="overview-match-card" key={match.id}>
-                <div className="player-cell">
-                  <div className="overview-avatar-stack">
-                    {match.opponent.split(" & ").map((name) => {
-                      const player = DEMO_PLAYERS.find((candidate) => candidate.name === name);
-                      return <ProfilePortrait key={name} className="overview-profile-avatar" variant={player?.avatar ?? 0} name={name}/>;
-                    })}
-                  </div>
-                  <div className="overview-match-info">
-                    <strong>{match.opponent}</strong>
-                    <p>{match.format} · {match.date}</p>
-                    <small>ELO {match.opponentRating}</small>
-                  </div>
-                </div>
-                <div className="overview-match-result">
-                  <span className={`result ${match.status === "upcoming" ? "pending" : match.won ? "win" : "loss"}`}>
-                    {match.status === "upcoming" ? "Awaiting score" : `${match.won ? "Won" : "Lost"} ${match.score?.[0]}–${match.score?.[1]}`}
-                  </span>
-                  {match.status === "completed" && <span className={(match.change ?? 0) < 0 ? "down" : "up"}>{(match.change ?? 0) > 0 ? "+" : ""}{match.change} pts</span>}
-                  {typeof match.id === "string" && <Link href={`/matches/${match.id}`} className="match-detail-link">{match.status === "completed" ? "View match" : "Enter score"}<span aria-hidden="true"> →</span></Link>}
-                </div>
-              </article>
+      {pending.length > 0 && (
+        <section className="list-section">
+          <h2 className="section-title">Waiting for a score</h2>
+          <ul className="result-list">
+            {pending.map((match) => (
+              <li key={match.id}>
+                <Link className="result-row" href={`/matches/${match.id}`}>
+                  <span className="result-players">{teamNames(match)} vs {opponentNames(match)}</span>
+                  <span className="result-action">Enter score</span>
+                </Link>
+              </li>
             ))}
-          </div>
-          <p className="demo-note">Demo data · matches are saved in this browser.</p>
-          <footer>© 2026 Ngadu <span>Play your game. Own your rank.</span></footer>
+          </ul>
+        </section>
+      )}
+
+      <section className="list-section">
+        <div className="section-head">
+          <h2 className="section-title">Recent matches</h2>
+          <Link className="text-link" href="/matches">All results</Link>
         </div>
+        <ul className="result-list">
+          {feed.map((item) => {
+            const body = <>
+              <span className="result-players">{item.players}</span>
+              <span className="result-score numeral">{item.score[0]}–{item.score[1]}</span>
+              <span className="result-date">{item.date}</span>
+            </>;
+            return <li key={item.id}>{item.href ? <Link className="result-row" href={item.href}>{body}</Link> : <div className="result-row">{body}</div>}</li>;
+          })}
+        </ul>
       </section>
-    </main>
+
+      <Link className="primary-button" href="/matches/new">Record a result</Link>
+      <p className="demo-note">Demo data. Matches you record are saved in this browser only.</p>
+    </AppFrame>
   );
 }

@@ -1,37 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo } from "next/font/google";
 import "./globals.css";
-import "./routes.css";
-import "./match-result.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// One family, two voices: normal width for reading, condensed black italic for scores.
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  style: ["normal", "italic"],
+  axes: ["wdth"],
 });
 
 export const metadata: Metadata = {
   title: "Ngadu",
-  description: "Badminton matchmaking and a global player ladder.",
+  description: "Badminton results and a ladder for you and your friends.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#fbf8f1",
+  themeColor: "#0b16e0",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${archivo.variable} h-full antialiased`}>
       <body><div className="app-window">{children}</div></body>
     </html>
   );

@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AppNavigation from "../components/AppNavigation";
-import AppHeader from "../components/AppHeader";
+import AppFrame from "../components/AppFrame";
 import ProfilePhoto from "../components/ProfilePhoto";
-import SportsIllustration from "../components/SportsIllustration";
 import { loadLeaderboard, type Leaderboard } from "../lib/leaderboard";
 
-const medals = ["🥇", "🥈", "🥉"];
 type State = { status: "loading" } | { status: "error" } | { status: "ready"; data: Leaderboard };
 
 export default function LeaderboardRoute() {
@@ -25,17 +22,61 @@ export default function LeaderboardRoute() {
 
   const data = state.status === "ready" ? state.data : null;
   const players = data?.players ?? [];
+  // Podium reads 2 · 1 · 3 so the leader stands in the middle.
   const podium = [players[1], players[0], players[2]].filter((player) => player !== undefined);
-  return <main className="app-shell"><AppNavigation /><section className="main-area"><AppHeader neutral /><div className="content leaderboard-route">
-    <section className="leader-hero"><div className="leader-hero-copy"><span className="hero-kicker">🏸 &nbsp; NGADU GLOBAL LADDER</span><h1>Who’s on a<br />winning streak?</h1><p>Every rally gets you closer to the top. Keep playing, keep climbing!</p><span className="hero-season">🏆 &nbsp; Global leaderboard</span></div><div className="hero-doodle"><SportsIllustration /><span className="doodle-spark spark-a">✦</span><span className="doodle-spark spark-b">✧</span></div><span className="hero-ball ball-one">🏸</span><span className="hero-ball ball-two">🎾</span></section>
-    {state.status === "loading" && <section className="leaderboard-state" role="status">Loading global standings…</section>}
-    {state.status === "error" && <section className="leaderboard-state" role="alert"><h2>Standings are unavailable</h2><p>We couldn’t load the leaderboard. Please try again.</p><button className="primary-button" onClick={() => { setState({ status: "loading" }); setAttempt((value) => value + 1); }}>Try again</button></section>}
-    {data && players.length === 0 && <section className="leaderboard-state"><h2>No ranked players yet</h2><p>There are no standings to show yet.</p></section>}
-    {data && players.length > 0 && <>
-      <div className="podium-intro"><div><p className="eyebrow">TOP PLAYERS</p><h2>Leading the ladder</h2></div><p>Current global standings</p></div>
-      <section className="photo-podium" aria-label="Leaderboard top three">{podium.map((player) => <article className={`photo-podium-card photo-rank-${player.rank}`} key={player.user_id}><div className="photo-medal">{medals[player.rank - 1]}</div><ProfilePhoto className="profile-photo" photoUrl={player.photo_url} name={player.display_name} /><span className="photo-rank-label">RANK #{player.rank}</span><h3>{player.display_name}</h3><strong className="photo-elo">{player.rating.toLocaleString()} <small>ELO</small></strong><span className="photo-wins">✨ &nbsp;{player.wins} wins</span></article>)}</section>
-      <section className="full-rankings"><div className="full-rankings-head"><div><h2>Global leaderboard</h2><p>Friendly competition, excellent rallies.</p></div><span className="ranking-count">{players.length < data.total_players ? `TOP ${players.length} OF ${data.total_players}` : `${data.total_players} PLAYERS`}</span></div>{players.map((player) => <article className="ranking-row" key={player.user_id}><span className={`rank-number ${player.rank <= 3 ? `rank-medal rank-medal-${player.rank}` : ""}`}>{player.rank <= 3 ? medals[player.rank - 1] : String(player.rank).padStart(2, "0")}</span><div className="ranking-player"><ProfilePhoto className="ranking-photo" photoUrl={player.photo_url} name={player.display_name} /><div><strong>{player.display_name}</strong><small>{player.wins} wins · {player.losses} losses</small></div></div><strong className="ranking-elo">{player.rating.toLocaleString()} <small>ELO</small></strong></article>)}</section>
-    </>}
-    <p className="demo-note">Fictional development standings · Demo match results are tracked separately.</p>
-  </div></section></main>;
+
+  return (
+    <AppFrame neutral>
+      <div className="page-head">
+        <h1 className="page-title">Leaderboard</h1>
+        {data && players.length > 0 && (
+          <span className="page-meta">{players.length < data.total_players ? `Top ${players.length} of ${data.total_players}` : `${data.total_players} players`}</span>
+        )}
+      </div>
+
+      {state.status === "loading" && <section className="state-panel" role="status">Loading standings…</section>}
+      {state.status === "error" && (
+        <section className="state-panel" role="alert">
+          <h2>Standings didn’t load</h2>
+          <p>The leaderboard server didn’t respond. Check that the backend is running, then try again.</p>
+          <button className="primary-button" onClick={() => { setState({ status: "loading" }); setAttempt((value) => value + 1); }}>Try again</button>
+        </section>
+      )}
+      {data && players.length === 0 && (
+        <section className="state-panel">
+          <h2>No ranked players yet</h2>
+          <p>Standings appear here once players have a rating.</p>
+        </section>
+      )}
+
+      {data && players.length > 0 && <>
+        <section className="podium" aria-label="Top three players">
+          {podium.map((player) => (
+            <article className={`podium-step podium-rank-${player.rank}`} key={player.user_id}>
+              <span className="podium-rank numeral">{player.rank}</span>
+              <ProfilePhoto className="podium-photo" photoUrl={player.photo_url} name={player.display_name} />
+              <h2>{player.display_name}</h2>
+              <strong className="numeral">{player.rating.toLocaleString("en-US")}</strong>
+            </article>
+          ))}
+        </section>
+
+        <ol className="ladder">
+          {players.map((player) => (
+            <li className="ladder-row" key={player.user_id}>
+              <span className="ladder-rank numeral">{player.rank}</span>
+              <ProfilePhoto className="ladder-photo" photoUrl={player.photo_url} name={player.display_name} />
+              <span className="ladder-name">
+                <strong>{player.display_name}</strong>
+                <small>{player.wins} won, {player.losses} lost</small>
+              </span>
+              <strong className="ladder-rating numeral">{player.rating.toLocaleString("en-US")}</strong>
+            </li>
+          ))}
+        </ol>
+      </>}
+
+      <p className="demo-note">Fictional development standings. Results recorded in this browser don’t change them.</p>
+    </AppFrame>
+  );
 }
