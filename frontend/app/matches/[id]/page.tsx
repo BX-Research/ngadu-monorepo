@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { Suspense, useState, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
-import AppNavigation from "../../components/AppNavigation";
+import AppFrame from "../../components/AppFrame";
 import AppHeader from "../../components/AppHeader";
-import ProfilePortrait from "../../components/ProfilePortrait";
+import Scoreboard from "../../components/Scoreboard";
 import { demoMatchesSnapshot, parseDemoMatchesSnapshot, subscribeDemoMatches, submitDemoMatchResult } from "../../lib/demoMatches";
+import { opponentNames, shortDate, signedPoints, teamNames } from "../../lib/display";
 
 export default function MatchDetailRoute() {
-  return <Suspense fallback={<main className="app-shell"><section className="main-area"><div className="content match-detail-route">Loading match…</div></section></main>}><MatchDetailContent/></Suspense>;
+  return <Suspense fallback={<main className="app-shell"><AppHeader /><div className="content"><p className="state-panel" role="status">Loading match…</p></div></main>}><MatchDetailContent /></Suspense>;
 }
 
 function MatchDetailContent() {
@@ -26,23 +27,82 @@ function MatchDetailContent() {
     const opponentScore = Number(scores[1]);
     const saved = submitDemoMatchResult(id, ownScore, opponentScore);
     if (!saved) {
-      setError(ownScore === opponentScore ? "Skor seri belum bisa dikirim. Tentukan pemenang dengan skor lebih tinggi." : "Masukkan dua skor bulat yang valid.");
+      setError(ownScore === opponentScore ? "Scores can’t be tied. The side with more points wins." : "Enter a whole number for each side.");
       return;
     }
     setError("");
   }
 
-  const ownPlayers = match ? [match.players.you, ...(match.players.ally ? [match.players.ally] : [])] : [];
-  const opponents = match?.players.opponents ?? [];
-  const createdAt = match ? new Date(match.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }) : "";
+  if (!loaded) return <AppFrame><p className="state-panel" role="status">Loading match…</p></AppFrame>;
+  if (!match) {
+    return (
+      <AppFrame>
+        <section className="state-panel">
+          <h2>Match not found</h2>
+          <p>Demo matches live in the browser they were recorded in. This one may be on another device.</p>
+          <Link className="primary-button" href="/matches">Back to results</Link>
+        </section>
+      </AppFrame>
+    );
+  }
 
-  return <main className="app-shell"><AppNavigation/><section className="main-area"><AppHeader/><div className="content match-detail-route">
-    {!loaded ? <section className="new-match-card"><p>Loading match…</p></section> : !match ? <section className="new-match-card"><h1>Match tidak ditemukan</h1><p>Match demo ini mungkin dibuat di browser atau perangkat lain.</p><Link className="primary-button" href="/matches">Kembali ke matches</Link></section> : <>
-      <section className="new-match-hero"><div><span className="hero-kicker">🏸 &nbsp;{match.status === "completed" ? "MATCH COMPLETED" : "MATCH IN PROGRESS"}</span><h1>{match.status === "completed" ? "Good game!" : "Enter your score."}</h1><p>{match.sport} · {match.format} · dibuat {createdAt}</p></div><span className="match-detail-art">🏸<b>✨</b></span></section>
-      <section className="match-detail-card"><div className="new-match-card-head"><div><span className="eyebrow">MATCH RESULT</span><h2>Who played?</h2><p>Pastikan tim dan skor yang dimasukkan sesuai hasil permainan.</p></div><span className="setup-icon">🏆</span></div>
-        <div className="match-teams"><article className="match-team-card own-team-card"><span className="new-section-label">YOUR TEAM</span>{ownPlayers.map((player) => <div className="match-player-line" key={player.id}><ProfilePortrait variant={player.avatar} name={player.name}/><span><strong>{player.name}{player.id === match.players.you.id ? <small>YOU</small> : null}</strong><small>{player.elo.toLocaleString()} ELO</small></span></div>)}</article><div className="match-versus">VS</div><article className="match-team-card opponent-team-card"><span className="new-section-label">OPPONENT TEAM</span>{opponents.map((player) => <div className="match-player-line" key={player.id}><ProfilePortrait variant={player.avatar} name={player.name}/><span><strong>{player.name}</strong><small>{player.elo.toLocaleString()} ELO</small></span></div>)}</article></div>
-        {match.status === "awaiting_result" ? <form className="score-submit-form" onSubmit={submit}><h2>Final score</h2><p>Skor lebih tinggi menentukan pemenang. Seri belum bisa disubmit.</p><div className="score-submit-row"><label><span>YOUR TEAM</span><input aria-label="Your team score" type="number" min="0" step="1" required value={scores[0]} onChange={(event) => setScores([event.target.value, scores[1]])} placeholder="0"/></label><b>:</b><label><span>OPPONENT TEAM</span><input aria-label="Opponent team score" type="number" min="0" step="1" required value={scores[1]} onChange={(event) => setScores([scores[0], event.target.value])} placeholder="0"/></label></div>{error && <div className="notice" role="alert">{error}</div>}<button className="primary-button full" type="submit">Submit score <span>→</span></button><small className="score-required-note">Score submission is required to complete this match.</small></form> : <section className={`match-result-banner ${match.won ? "result-won" : "result-lost"}`}><span className="result-sparkle">{match.won ? "🎉" : "💪"}</span><div><h2>{match.resultMessage}</h2><p>Skor akhir: {match.score?.[0]} – {match.score?.[1]} · {match.won ? "Menang" : "Kalah"} · demo rating {match.ratingChange && match.ratingChange > 0 ? "+" : ""}{match.ratingChange} ELO</p><small>Hasil tersimpan di browser ini. Rating masih simulasi, belum diperbarui di server.</small></div></section>}
-      </section><div className="match-detail-actions"><Link className="text-button" href="/matches">Lihat riwayat matches →</Link><Link className="text-button" href="/matches/new">Buat match lagi ＋</Link></div>
-    </>}
-  </div></section></main>;
+  const ownPlayers = [match.players.you, ...(match.players.ally ? [match.players.ally] : [])];
+  const title = `${match.format} vs ${opponentNames(match)}`;
+  const left = teamNames(match);
+  const right = opponentNames(match);
+  const awaiting = match.status === "awaiting_result";
+
+  return (
+    <AppFrame>
+      <h1 className="page-title">{awaiting ? "Enter the score" : "Final score"}</h1>
+
+      {awaiting ? (
+        <form onSubmit={submit}>
+          <Scoreboard
+            title={title}
+            date={shortDate(match.createdAt)}
+            left={{ label: left, score: <input className="score-input" aria-label="Your side’s score" type="number" inputMode="numeric" min="0" step="1" required value={scores[0]} onChange={(event) => setScores([event.target.value, scores[1]])} placeholder="0" /> }}
+            right={{ label: right, score: <input className="score-input" aria-label="Opponents’ score" type="number" inputMode="numeric" min="0" step="1" required value={scores[1]} onChange={(event) => setScores([scores[0], event.target.value])} placeholder="0" /> }}
+          />
+          {error && <p className="notice" role="alert">{error}</p>}
+          <button className="primary-button" type="submit">Save result</button>
+          <p className="demo-note">The side with more points wins. Ties can’t be saved.</p>
+        </form>
+      ) : (
+        <>
+          <Scoreboard
+            title={title}
+            date={shortDate(match.createdAt)}
+            left={{ label: left, score: match.score?.[0] }}
+            right={{ label: right, score: match.score?.[1] }}
+            outcome={match.won ? "won" : "lost"}
+          >
+            {match.resultMessage && <p className="scoreboard-quip">“{match.resultMessage}”</p>}
+          </Scoreboard>
+          <div className="rating-line">
+            <span>Rating change</span>
+            <span className={`points-chip${(match.ratingChange ?? 0) < 0 ? " points-down" : ""}`}>{signedPoints(match.ratingChange ?? 0)}</span>
+          </div>
+        </>
+      )}
+
+      <section className="list-section">
+        <h2 className="section-title">Who played</h2>
+        <ul className="result-list">
+          {[...ownPlayers.map((player) => ({ player, side: "Your side" })), ...match.players.opponents.map((player) => ({ player, side: "Opponents" }))].map(({ player, side }) => (
+            <li className="result-row" key={player.id}>
+              <span className="result-players">{player.id === match.players.you.id ? `${player.name} (you)` : player.name}<small>{side}</small></span>
+              <span className="result-score numeral">{player.elo.toLocaleString("en-US")}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {!awaiting && <p className="demo-note">Saved in this browser. Demo ratings don’t update the leaderboard.</p>}
+      <div className="link-pair">
+        <Link className="text-link" href="/matches">All results</Link>
+        <Link className="text-link" href="/matches/new">Record another</Link>
+      </div>
+    </AppFrame>
+  );
 }
